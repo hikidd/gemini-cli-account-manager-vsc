@@ -5,10 +5,20 @@ export interface GeminiAccount {
   accessToken: string;
   refreshToken: string;
   expiresAt: number;             // 过期时间戳（毫秒）
+  idToken?: string;              // OIDC ID Token
+  tokenType?: string;            // Bearer etc.
+  scope?: string;                // OAuth scopes
   isActive: boolean;
   createdAt: string;
   avatarUrl?: string;            // 用户头像 URL
   type?: 'FREE' | 'PRO';         // 账号类型
+  quota?: {
+    buckets: Array<{
+      modelId: string;
+      remainingFraction: number;
+      resetTime?: string;
+    }>;
+  };
 }
 
 export type MessageType = 
@@ -19,7 +29,8 @@ export type MessageType =
   | 'getState'
   | 'updateState'
   | 'error'
-  | 'success';
+  | 'success'
+  | 'refreshQuota';
 
 export interface Message {
   type: MessageType;

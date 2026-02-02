@@ -5,6 +5,7 @@ import { AccountManager } from '../managers/AccountManager';
 import { GoogleAuthService } from '../services/GoogleAuthService';
 import { GeminiCliService } from '../services/GeminiCliService';
 import { TerminalManager } from '../managers/TerminalManager';
+import { GeminiQuotaService } from '../services/GeminiQuotaService';
 import { Message } from '../types';
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
@@ -14,6 +15,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
   private authService: GoogleAuthService;
   private cliService: GeminiCliService;
   private terminalManager: TerminalManager;
+  private quotaService: GeminiQuotaService;
 
   constructor(context: vscode.ExtensionContext, accountManager: AccountManager) {
     this.context = context;
@@ -21,6 +23,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     this.authService = new GoogleAuthService();
     this.cliService = new GeminiCliService();
     this.terminalManager = new TerminalManager();
+    this.quotaService = new GeminiQuotaService();
   }
 
   public resolveWebviewView(
@@ -89,6 +92,9 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         case 'getState':
           await this.sendState();
           break;
+        case 'refreshQuota':
+          await this.handleRefreshQuota(message.payload.id);
+          break;
       }
     } catch (error: any) {
       vscode.window.showErrorMessage(`Error: ${error.message}`);
@@ -96,21 +102,90 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  private async handleRefreshQuota(id: string) {
+    const account = this.accountManager.getAccount(id);
+    if (!account) return;
+
+    // Refresh Project ID & Quota
+    const projectId = await this.quotaService.fetchProjectId(account);
+    if (projectId) {
+      account.projectId = projectId;
+    }
+    
+    const quotaData = await this.quotaService.fetchQuota(account);
+    if (quotaData && quotaData.buckets) {
+      account.quota = { buckets: quotaData.buckets };
+    }
+
+    await this.accountManager.saveAccount(account);
+    await this.sendState();
+    vscode.window.showInformationMessage(`Quota refreshed for ${account.email}`);
+  }
+
   private async handleLogin() {
     const account = await this.authService.startLogin();
+    
+    // 1. Fetch Project ID
+    const projectId = await this.quotaService.fetchProjectId(account);
+    if (projectId) {
+      account.projectId = projectId;
+    }
+
+    // 2. Fetch Quota
+    const quotaData = await this.quotaService.fetchQuota(account);
+    if (quotaData && quotaData.buckets) {
+      account.quota = { buckets: quotaData.buckets };
+    }
+
     await this.accountManager.saveAccount(account);
     await this.accountManager.setActiveAccount(account.id); // Auto-switch
     await this.cliService.updateCredentials(account);
-    await this.terminalManager.refreshTerminal(account);
+    
+    const lang = this.accountManager.getLanguage();
+    await this.terminalManager.refreshTerminal(account, lang);
+    
     await this.sendState();
     vscode.window.showInformationMessage(`Successfully logged in as ${account.email}`);
   }
 
   private async handleSwitchAccount(id: string) {
+    const lang = this.accountManager.getLanguage();
+    const message = lang === 'zh'
+      ? "切换账号将重启终端。请确保已保存当前对话（例如使用 '/chat save'）。确定继续吗？"
+      : "Switching accounts will restart the terminal. Please ensure you have saved your current session (e.g. '/chat save'). Continue?";
+    
+    const confirmBtn = lang === 'zh' ? "确定" : "Continue";
+
+    const selection = await vscode.window.showWarningMessage(
+      message,
+      { modal: true },
+      confirmBtn
+    );
+
+    if (selection !== confirmBtn) {
+      return;
+    }
+
     const account = await this.accountManager.setActiveAccount(id);
     if (account) {
+      // Refresh Project ID & Quota on switch
+      const projectId = await this.quotaService.fetchProjectId(account);
+      if (projectId) {
+        account.projectId = projectId;
+      }
+      
+      const quotaData = await this.quotaService.fetchQuota(account);
+      if (quotaData && quotaData.buckets) {
+        account.quota = { buckets: quotaData.buckets };
+      }
+      // Save the updated info (projectId/quota) back to storage
+      await this.accountManager.saveAccount(account);
+
       await this.cliService.updateCredentials(account);
-      await this.terminalManager.refreshTerminal(account);
+      
+      // lang is already fetched
+      await this.terminalManager.refreshTerminal(account, lang);
+      
       await this.sendState();
       vscode.window.showInformationMessage(`Switched to ${account.email}`);
     }

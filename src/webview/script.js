@@ -12,6 +12,7 @@
             'addAccount': '+ Add Account',
             'switch': 'Switch',
             'remove': 'Remove',
+            'refresh': 'Refresh',
             'active': 'Active',
             'lastLogin': 'Last login',
             'noAccounts': 'No accounts found. Please login.',
@@ -25,6 +26,7 @@
             'addAccount': '+ 添加账号',
             'switch': '切换',
             'remove': '移除',
+            'refresh': '刷新',
             'active': '当前使用',
             'lastLogin': '上次登录',
             'noAccounts': '暂无账号，请点击添加。',
@@ -84,6 +86,7 @@
     }
 
     function renderAccounts(accounts) {
+        console.log('Rendering accounts:', accounts); // Debug log
         accountList.innerHTML = '';
 
         if (!accounts || accounts.length === 0) {
@@ -92,80 +95,176 @@
         }
 
         accounts.forEach(account => {
-            const card = document.createElement('div');
-            card.className = `account-card ${account.isActive ? 'active' : ''}`;
-            
-            const avatarSrc = account.avatarUrl || 'https://www.gstatic.com/lam/qp/images/icons/default_avatar.svg';
-            
-            // Localized model info (hardcoded structure for now)
-            const modelsHtml = `
-                <div class="models-container">
-                    <div class="model-chip">
-                        <div class="model-name">G3 Pro</div>
-                        <div class="model-info">
-                            <span>${t('unknown')}</span>
-                            <span>100%</span>
-                        </div>
-                    </div>
-                    <div class="model-chip">
-                        <div class="model-name">G3 Flash</div>
-                        <div class="model-info">
-                            <span>${t('unknown')}</span>
-                            <span>100%</span>
-                        </div>
-                    </div>
-                </div>
-            `;
+            try {
+                const card = document.createElement('div');
+                card.className = `account-card ${account.isActive ? 'active' : ''}`;
+                
+                const avatarSrc = account.avatarUrl || 'https://www.gstatic.com/lam/qp/images/icons/default_avatar.svg';
+                
+                // Dynamic Quota Display
+                let quotaHtml = '';
+                
+                // Refresh Icon SVG
+                const refreshIcon = `<svg class="action-refresh-quota" data-id="${account.id}" style="cursor:pointer; width:12px; height:12px;" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M4.681 3H2V2h3.5l.5.5V6H5V4a5 5 0 1 0 1.454-9.645l-.908.419A4 4 0 1 1 5 3.06L4.681 3z"/></svg>`;
 
-            const lastUsed = new Date(account.createdAt).toLocaleDateString(currentLang === 'zh' ? 'zh-CN' : 'en-US');
+                // Targets
+                const targetModels = [
+                    { id: 'gemini-3-pro-preview', name: 'G3 Pro' },
+                    { id: 'gemini-3-flash-preview', name: 'G3 Flash' }
+                ];
 
-            card.innerHTML = `
-                <div class="card-header">
-                    <img src="${avatarSrc}" class="avatar" alt="Avatar">
-                    <div class="user-info">
-                        <div class="email" title="${account.email}">${account.email}</div>
-                        ${account.type === 'PRO' 
-                            ? `<div class="badge" style="background-color: var(--vscode-badge-background); color: var(--vscode-badge-foreground);">PRO</div>` 
-                            : `<div class="badge" style="background-color: var(--vscode-charts-lines); color: var(--vscode-editor-background);">FREE</div>`
+                if (account.quota && account.quota.buckets) {
+                    let barsHtml = '';
+                    
+                    targetModels.forEach(target => {
+                        // Find bucket or use default full quota
+                        let bucket = account.quota.buckets.find(b => b.modelId === target.id);
+                        if (!bucket) {
+                            bucket = {
+                                modelId: target.id,
+                                remainingFraction: 1.0,
+                                resetTime: null 
+                            };
                         }
-                    </div>
-                </div>
-                ${modelsHtml}
-                <div class="footer">
-                    <div class="last-used">${t('lastLogin')}: ${lastUsed}</div>
-                    <div class="actions">
-                        ${!account.isActive 
-                            ? `<button class="btn btn-sm action-switch" data-id="${account.id}">${t('switch')}</button>` 
-                            : `<button class="btn btn-sm" disabled style="opacity: 0.7; cursor: default;">${t('active')}</button>`}
-                        <button class="btn btn-secondary btn-sm action-remove" data-id="${account.id}">${t('remove')}</button>
-                    </div>
-                </div>
-            `;
 
-            accountList.appendChild(card);
+                        if (bucket) {
+                            // Remaining Capacity Bar
+                            const remaining = bucket.remainingFraction;
+                            const remainingPercent = Math.max(0, Math.min(100, remaining * 100));
+                            
+                            // Color Logic based on Remaining
+                            let barColor = '#f44336'; // Red (Critical < 20% left)
+                            if (remaining > 0.8) {
+                                barColor = '#4caf50'; // Green (Safe > 80% left)
+                            } else if (remaining > 0.2) {
+                                barColor = '#ff9800'; // Orange (Warning 20-80% left)
+                            }
 
-            // Add Event Listeners directly
-            const switchBtn = card.querySelector('.action-switch');
-            const removeBtn = card.querySelector('.action-remove');
+                            // Calculate Reset Time
+                            let resetText = '';
+                            if (bucket.resetTime) {
+                                const resetDate = new Date(bucket.resetTime);
+                                const now = new Date();
+                                const diffMs = resetDate.getTime() - now.getTime();
+                                
+                                if (diffMs > 0) {
+                                    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+                                    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                                    resetText = `${hours}h ${minutes}m`;
+                                } else {
+                                    resetText = 'Ready';
+                                }
+                            }
 
-            if (switchBtn) {
-                switchBtn.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Prevent bubbling issues
-                    vscode.postMessage({
-                        type: 'switchAccount',
-                        payload: { id: account.id }
+                            barsHtml += `
+                                <div class="quota-row" style="margin-bottom:4px;">
+                                    <div class="quota-header" style="display:grid; grid-template-columns: 1fr auto 1fr; align-items:center; font-size:10px;">
+                                        <span style="justify-self:start; font-weight:600;">${target.name}</span>
+                                        <span style="justify-self:center; font-size:9px; opacity:0.7;">${resetText ? '⟳ ' + resetText : ''}</span>
+                                        <span style="justify-self:end;">${(remaining * 100).toFixed(1)}%</span>
+                                    </div>
+                                    <div class="progress-track">
+                                        <div class="progress-fill" style="width: ${remainingPercent}%; background-color: ${barColor}"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }
                     });
-                });
-            }
 
-            if (removeBtn) {
-                removeBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    vscode.postMessage({
-                        type: 'removeAccount',
-                        payload: { id: account.id }
+                    if (barsHtml) {
+                        quotaHtml = `
+                            <div class="quota-section">
+                                ${barsHtml}
+                            </div>
+                        `;
+                    } else {
+                         quotaHtml = `
+                            <div class="quota-section" style="opacity:0.5; font-size:10px; display:flex; align-items:center; gap:4px;">
+                                <span>No usage data for G3 models</span>
+                            </div>`;
+                    }
+
+                } else if (!account.quota) {
+                    // Placeholder if no quota fetched yet (or fetch failed)
+                    quotaHtml += `
+                        <div class="quota-section" style="opacity:0.5; font-size:10px; display:flex; align-items:center; gap:4px;">
+                            <span>Waiting for quota...</span>
+                        </div>`;
+                }
+
+                // Wrap it in a container
+                const modelsHtml = `<div class="models-container" style="display:block; padding-top:4px;">${quotaHtml}</div>`;
+
+                const lastUsed = new Date(account.createdAt).toLocaleDateString(currentLang === 'zh' ? 'zh-CN' : 'en-US');
+
+                card.innerHTML = `
+                    <div class="card-header">
+                        <img src="${avatarSrc}" class="avatar" alt="Avatar">
+                        <div class="user-info">
+                            <div class="email" title="${account.email}">${account.email}</div>
+                            ${account.type === 'PRO' 
+                                ? `<div class="badge" style="background-color: var(--vscode-badge-background); color: var(--vscode-badge-foreground);">PRO</div>` 
+                                : `<div class="badge" style="background-color: var(--vscode-charts-lines); color: var(--vscode-editor-background);">FREE</div>`
+                            }
+                        </div>
+                    </div>
+                    ${modelsHtml}
+                    <div class="footer">
+                        <div class="last-used">${t('lastLogin')}: ${lastUsed}</div>
+                        <div class="actions">
+                            <button class="btn btn-sm action-refresh-quota" data-id="${account.id}">${t('refresh')}</button>
+                            ${!account.isActive 
+                                ? `<button class="btn btn-sm action-switch" data-id="${account.id}">${t('switch')}</button>` 
+                                : `<button class="btn btn-sm" disabled style="opacity: 0.7; cursor: default;">${t('active')}</button>`}
+                            <button class="btn btn-secondary btn-sm action-remove" data-id="${account.id}">${t('remove')}</button>
+                        </div>
+                    </div>
+                `;
+
+                accountList.appendChild(card);
+
+                // Add Event Listeners directly
+                const switchBtn = card.querySelector('.action-switch');
+                const removeBtn = card.querySelector('.action-remove');
+                const refreshQuotaBtn = card.querySelector('.action-refresh-quota');
+
+                if (switchBtn) {
+                    switchBtn.addEventListener('click', (e) => {
+                        e.stopPropagation(); // Prevent bubbling issues
+                        vscode.postMessage({
+                            type: 'switchAccount',
+                            payload: { id: account.id }
+                        });
                     });
-                });
+                }
+
+                if (removeBtn) {
+                    removeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        vscode.postMessage({
+                            type: 'removeAccount',
+                            payload: { id: account.id }
+                        });
+                    });
+                }
+
+                if (refreshQuotaBtn) {
+                    refreshQuotaBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        // Visual feedback: disable button briefly
+                        refreshQuotaBtn.disabled = true;
+                        refreshQuotaBtn.style.opacity = '0.7';
+                        refreshQuotaBtn.textContent = '...';
+                        
+                        vscode.postMessage({
+                            type: 'refreshQuota',
+                            payload: { id: account.id }
+                        });
+                    });
+                }
+            } catch (err) {
+                console.error('Error rendering account card:', err);
+                accountList.innerHTML += `<div style="color:red; padding:10px;">Error rendering account: ${err.message}</div>`;
             }
         });
     }

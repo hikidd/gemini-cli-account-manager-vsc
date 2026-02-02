@@ -28,6 +28,10 @@ export class AccountManager {
     return this._accounts;
   }
 
+  public getAccount(id: string): GeminiAccount | undefined {
+    return this._accounts.find(a => a.id === id);
+  }
+
   public async saveAccount(account: GeminiAccount): Promise<void> {
     // Check if account already exists (by email)
     const existingIndex = this._accounts.findIndex(a => a.email === account.email);

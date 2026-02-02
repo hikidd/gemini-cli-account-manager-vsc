@@ -8,6 +8,8 @@ export class GeminiCliService {
   private readonly GOOGLE_ACCOUNTS_FILE = path.join(this.GEMINI_DIR, 'google_accounts.json');
   private readonly OAUTH_CREDS_FILE = path.join(this.GEMINI_DIR, 'oauth_creds.json');
 
+  private readonly SETTINGS_FILE = path.join(this.GEMINI_DIR, 'settings.json');
+
   constructor() {
     this.ensureGeminiDir();
   }
@@ -19,8 +21,29 @@ export class GeminiCliService {
   }
 
   public async updateCredentials(account: GeminiAccount): Promise<void> {
+    // 1. Backup settings.json if it exists
+    let settingsBackup: string | null = null;
+    if (fs.existsSync(this.SETTINGS_FILE)) {
+      try {
+        settingsBackup = fs.readFileSync(this.SETTINGS_FILE, 'utf8');
+      } catch (e) {
+        console.warn('Failed to backup settings.json', e);
+      }
+    }
+
+    // 2. Update credentials files
     await this.updateGoogleAccountsFile(account);
     await this.updateOAuthCredsFile(account);
+
+    // 3. Restore settings.json if we had a backup
+    if (settingsBackup) {
+      try {
+        fs.writeFileSync(this.SETTINGS_FILE, settingsBackup, 'utf8');
+        console.log('Restored settings.json backup');
+      } catch (e) {
+        console.error('Failed to restore settings.json', e);
+      }
+    }
   }
 
   private async updateGoogleAccountsFile(account: GeminiAccount) {

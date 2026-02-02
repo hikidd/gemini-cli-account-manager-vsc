@@ -16,6 +16,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
   private cliService: GeminiCliService;
   private terminalManager: TerminalManager;
   private quotaService: GeminiQuotaService;
+  private refreshTimer?: NodeJS.Timeout;
 
   constructor(context: vscode.ExtensionContext, accountManager: AccountManager) {
     this.context = context;
@@ -24,6 +25,31 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     this.cliService = new GeminiCliService();
     this.terminalManager = new TerminalManager();
     this.quotaService = new GeminiQuotaService();
+    
+    // Start auto-refresh timer (every 15 minutes)
+    this.startAutoRefresh();
+  }
+
+  private startAutoRefresh() {
+    // Refresh every 15 minutes (15 * 60 * 1000)
+    this.refreshTimer = setInterval(() => {
+      console.log('[SidebarProvider] Triggering auto-refresh for all accounts...');
+      this.refreshAllAccounts();
+    }, 15 * 60 * 1000);
+  }
+
+  public dispose() {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+    }
+  }
+
+  private async refreshAllAccounts() {
+    const accounts = this.accountManager.getAccounts();
+    for (const account of accounts) {
+        await this.performQuotaRefresh(account, true); // true = silent mode
+    }
+    await this.sendState();
   }
 
   public resolveWebviewView(
@@ -106,6 +132,38 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     const account = this.accountManager.getAccount(id);
     if (!account) return;
 
+    await this.performQuotaRefresh(account, false); // false = show notification
+    await this.sendState();
+  }
+
+  private async performQuotaRefresh(account: any, silent: boolean = false) {
+    // Check if token needs refresh (buffer 5 minutes)
+    if (Date.now() > account.expiresAt - 5 * 60 * 1000) {
+      try {
+        console.log(`[SidebarProvider] Token expired or soon to expire for ${account.email}, refreshing...`);
+        const tokens = await this.authService.refreshAccessToken(account.refreshToken);
+        
+        // Update account with new tokens
+        account.accessToken = tokens.access_token;
+        account.expiresAt = Date.now() + (tokens.expires_in * 1000);
+        if (tokens.refresh_token) {
+          account.refreshToken = tokens.refresh_token;
+        }
+        
+        await this.accountManager.saveAccount(account);
+        if (account.isActive) {
+           await this.cliService.updateCredentials(account);
+        }
+        console.log(`[SidebarProvider] Token refreshed successfully.`);
+      } catch (error: any) {
+        console.error(`[SidebarProvider] Failed to refresh token: ${error.message}`);
+        if (!silent) {
+            vscode.window.showErrorMessage(`Failed to refresh session for ${account.email}. Please login again.`);
+        }
+        return;
+      }
+    }
+
     // Refresh Project ID & Quota & Account Type
     const accountInfo = await this.quotaService.fetchAccountInfo(account);
     if (accountInfo.projectId) {
@@ -124,8 +182,10 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     }
 
     await this.accountManager.saveAccount(account);
-    await this.sendState();
-    vscode.window.showInformationMessage(`Quota refreshed for ${account.email}`);
+    
+    if (!silent) {
+        vscode.window.showInformationMessage(`Quota refreshed for ${account.email}`);
+    }
   }
 
   private async handleLogin() {

@@ -7,7 +7,7 @@ body {
 
 .header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     margin-bottom: 24px;
     padding-bottom: 8px;
@@ -39,6 +39,13 @@ body {
     font-size: 12px;
     font-weight: 500;
     transition: background-color 0.2s;
+    max-width: 100%;
+}
+
+.btn span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .btn:hover {
@@ -60,7 +67,8 @@ body {
 .btn-secondary {
     background-color: transparent;
     color: var(--vscode-textLink-foreground);
-    border: 1px solid var(--vscode-button-secondaryBackground); /* Or generic border */
+    border: 1px solid var(--vscode-button-secondaryBackground);
+    /* Or generic border */
 }
 
 .btn-secondary:hover {
@@ -123,6 +131,14 @@ body {
     border: 2px solid var(--vscode-sideBar-background);
 }
 
+.avatar.pro-ring {
+    border: none;
+    padding: 2px;
+    /* Thickness of the ring */
+    background: conic-gradient(from 0deg, #EA4335 0deg 90deg, #4285F4 90deg 180deg, #34A853 180deg 270deg, #FBBC04 270deg 360deg);
+    border-radius: 50%;
+}
+
 .user-info {
     display: flex;
     flex-direction: column;
@@ -157,16 +173,17 @@ body {
 }
 
 .badge.pro {
-    background-color: var(--vscode-badge-background);
-    color: var(--vscode-badge-foreground);
+    background: linear-gradient(135deg, #1e88e5 0%, #1565c0 100%);
+    color: white;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .badge.ultra {
-    background: linear-gradient(135deg, #1e88e5 0%, #9c27b0 50%, #e91e63 100%);
+    background: linear-gradient(135deg, #6200ea 0%, #9c27b0 50%, #d500f9 100%);
     color: white;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    border: 1px solid rgba(255,255,255,0.2);
-    text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .models-container {
@@ -227,14 +244,22 @@ body {
     display: none;
 }
 
-@keyframes spin { 100% { transform: rotate(360deg); } }
-.codicon-modifier-spin { animation: spin 1s infinite linear; display: inline-block; }
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.codicon-modifier-spin {
+    animation: spin 1s infinite linear;
+    display: inline-block;
+}
 
 .user-info {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    overflow: hidden; 
+    overflow: hidden;
 }
 
 .project-id {
@@ -262,7 +287,7 @@ body {
 
 .progress-track {
     width: 100%;
-    height: 6px; 
+    height: 6px;
     background-color: var(--vscode-widget-border);
     border-radius: 3px;
     overflow: hidden;

@@ -42,7 +42,7 @@ export class GeminiQuotaService {
         }
       );
       
-      console.log(`[GeminiQuotaService] Account Info response:`, response.data);
+      console.log(`[GeminiQuotaService] Account Info response:`, JSON.stringify(response.data, null, 2));
       
       const projectId = response.data.cloudaicompanionProject?.id;
       let type: 'FREE' | 'PRO' | 'ULTRA' = 'FREE'; // Default
@@ -54,7 +54,7 @@ export class GeminiQuotaService {
         const tierName = (response.data.currentTier.name || '').toLowerCase();
         rawTierId = response.data.currentTier.id || ''; // Store original case
         
-        console.log(`[GeminiQuotaService] Tier Detection - ID: ${tierId}, Name: ${tierName}`);
+        console.log(`[GeminiQuotaService] Tier Detection - ID: "${tierId}", Name: "${tierName}"`);
 
         // Check for ULTRA / Advanced first (Highest priority)
         const isUltra = tierId.includes('advanced') || tierId.includes('ultra') || 
@@ -76,6 +76,8 @@ export class GeminiQuotaService {
             console.log('[GeminiQuotaService] Tier ID is present and not free/basic, assuming PRO.');
             type = 'PRO';
         }
+      } else {
+         console.log('[GeminiQuotaService] No currentTier field found in response.');
       }
 
       return { projectId, type, tierId: rawTierId };

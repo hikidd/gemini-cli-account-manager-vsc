@@ -22,7 +22,7 @@
 
 如果您在使用过程中遇到问题，欢迎加入 QQ 交流群：
 
-![QQ 群](qqqun.jpg)
+<img src="qqqun.jpg" width="300" alt="QQ 群">
 
 ### 开发指南
 

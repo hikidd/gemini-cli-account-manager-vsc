@@ -1,10 +1,10 @@
-(function() {
+(function () {
     const vscode = acquireVsCodeApi();
 
     const loginBtn = document.getElementById('loginBtn');
     const langToggle = document.getElementById('langToggle');
     const accountList = document.getElementById('accountList');
-    
+
     // I18n Resources
     const translations = {
         'en': {
@@ -46,9 +46,9 @@
 
     langToggle.addEventListener('click', () => {
         const newLang = currentLang === 'zh' ? 'en' : 'zh';
-        vscode.postMessage({ 
-            type: 'setLanguage', 
-            payload: { language: newLang } 
+        vscode.postMessage({
+            type: 'setLanguage',
+            payload: { language: newLang }
         });
     });
 
@@ -80,7 +80,7 @@
             const key = el.getAttribute('data-i18n');
             el.textContent = t(key);
         });
-        
+
         // Update button title if needed
         langToggle.textContent = currentLang === 'zh' ? '中' : 'EN';
     }
@@ -98,12 +98,12 @@
             try {
                 const card = document.createElement('div');
                 card.className = `account-card ${account.isActive ? 'active' : ''}`;
-                
+
                 const avatarSrc = account.avatarUrl || 'https://www.gstatic.com/lam/qp/images/icons/default_avatar.svg';
-                
+
                 // Dynamic Quota Display
                 let quotaHtml = '';
-                
+
                 // Refresh Icon SVG
                 const refreshIcon = `<svg class="action-refresh-quota" data-id="${account.id}" style="cursor:pointer; width:12px; height:12px;" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M4.681 3H2V2h3.5l.5.5V6H5V4a5 5 0 1 0 1.454-9.645l-.908.419A4 4 0 1 1 5 3.06L4.681 3z"/></svg>`;
 
@@ -115,7 +115,7 @@
 
                 if (account.quota && account.quota.buckets) {
                     let barsHtml = '';
-                    
+
                     targetModels.forEach(target => {
                         // Find bucket or use default full quota
                         let bucket = account.quota.buckets.find(b => b.modelId === target.id);
@@ -123,7 +123,7 @@
                             bucket = {
                                 modelId: target.id,
                                 remainingFraction: 1.0,
-                                resetTime: null 
+                                resetTime: null
                             };
                         }
 
@@ -131,7 +131,7 @@
                             // Remaining Capacity Bar
                             const remaining = bucket.remainingFraction;
                             const remainingPercent = Math.max(0, Math.min(100, remaining * 100));
-                            
+
                             // Color Logic based on Remaining
                             let barColor = '#f44336'; // Red (Critical < 20% left)
                             if (remaining > 0.8) {
@@ -146,7 +146,7 @@
                                 const resetDate = new Date(bucket.resetTime);
                                 const now = new Date();
                                 const diffMs = resetDate.getTime() - now.getTime();
-                                
+
                                 if (diffMs > 0) {
                                     const hours = Math.floor(diffMs / (1000 * 60 * 60));
                                     const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
@@ -178,7 +178,7 @@
                             </div>
                         `;
                     } else {
-                         quotaHtml = `
+                        quotaHtml = `
                             <div class="quota-section" style="opacity:0.5; font-size:10px; display:flex; align-items:center; gap:4px;">
                                 <span>No usage data for G3 models</span>
                             </div>`;
@@ -196,21 +196,24 @@
                 const modelsHtml = `<div class="models-container" style="display:block; padding-top:4px;">${quotaHtml}</div>`;
 
                 const lastUsed = new Date(account.createdAt).toLocaleDateString(currentLang === 'zh' ? 'zh-CN' : 'en-US');
-                
+
                 const tierTooltip = account.tierId ? `Tier: ${account.tierId}` : 'Tier: Unknown';
-                
+
                 let badgeHtml = '';
                 if (account.type === 'ULTRA') {
                     badgeHtml = `<div class="badge ultra" title="${tierTooltip}" style="cursor:help;">ULTRA</div>`;
                 } else if (account.type === 'PRO') {
-                     badgeHtml = `<div class="badge pro" title="${tierTooltip}" style="cursor:help;">PRO</div>`;
+                    badgeHtml = `<div class="badge pro" title="${tierTooltip}" style="cursor:help;">PRO</div>`;
                 } else {
-                     badgeHtml = `<div class="badge free" title="${tierTooltip}" style="cursor:help;">FREE</div>`;
+                    badgeHtml = `<div class="badge free" title="${tierTooltip}" style="cursor:help;">FREE</div>`;
                 }
+
+                const isProAccount = account.type === 'PRO' || account.type === 'ULTRA';
+                const avatarClass = isProAccount ? 'avatar pro-ring' : 'avatar';
 
                 card.innerHTML = `
                     <div class="card-header">
-                        <img src="${avatarSrc}" class="avatar" alt="Avatar">
+                        <img src="${avatarSrc}" class="${avatarClass}" alt="Avatar">
                         <div class="user-info">
                             <div class="email" title="${account.email}">${account.email}</div>
                             ${badgeHtml}
@@ -221,9 +224,9 @@
                         <div class="last-used">${t('lastLogin')}: ${lastUsed}</div>
                         <div class="actions">
                             <button class="btn btn-sm action-refresh-quota" data-id="${account.id}">${t('refresh')}</button>
-                            ${!account.isActive 
-                                ? `<button class="btn btn-sm action-switch" data-id="${account.id}">${t('switch')}</button>` 
-                                : `<button class="btn btn-sm" disabled style="opacity: 0.7; cursor: default;">${t('active')}</button>`}
+                            ${!account.isActive
+                        ? `<button class="btn btn-sm action-switch" data-id="${account.id}">${t('switch')}</button>`
+                        : `<button class="btn btn-sm" disabled style="opacity: 0.7; cursor: default;">${t('active')}</button>`}
                             <button class="btn btn-secondary btn-sm action-remove" data-id="${account.id}">${t('remove')}</button>
                         </div>
                     </div>
@@ -263,7 +266,7 @@
                         refreshQuotaBtn.disabled = true;
                         refreshQuotaBtn.style.opacity = '0.7';
                         refreshQuotaBtn.textContent = '...';
-                        
+
                         vscode.postMessage({
                             type: 'refreshQuota',
                             payload: { id: account.id }

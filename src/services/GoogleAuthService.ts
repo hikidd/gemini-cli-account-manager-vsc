@@ -3,7 +3,9 @@ import * as url from 'url';
 import * as vscode from 'vscode';
 import { GeminiAccount } from '../types';
 import * as crypto from 'crypto';
+import { Socket } from 'net';
 
+export class GoogleAuthService {
   // This is the public client ID/Secret from the open-source Gemini CLI.
   // It is embedded here to allow the extension to act as the official CLI.
   private readonly CLIENT_ID = '681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com';
@@ -56,24 +58,43 @@ import * as crypto from 'crypto';
             
             if (code) {
               res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-              res.end('<h1>登录成功!</h1><p>您可以关闭此窗口并返回 VS Code。</p><script>window.close()</script>');
-              resolve(code);
+              res.end('<h1>登录成功!</h1><p>您可以关闭此窗口并返回 VS Code。</p><script>window.close()</script>', () => {
+                // Ensure response is sent before closing
+                cleanup();
+                resolve(code);
+              });
             } else {
               res.writeHead(400);
               res.end('Authorization code not found.');
+              cleanup();
               reject(new Error('Authorization code not found.'));
             }
-            
-            server.close();
           } else {
             res.writeHead(404);
             res.end('Not found');
           }
         } catch (error) {
+          cleanup();
           reject(error);
-          server.close();
         }
       });
+
+      const sockets = new Set<Socket>();
+
+      server.on('connection', (socket) => {
+        sockets.add(socket);
+        socket.on('close', () => sockets.delete(socket));
+      });
+
+      const cleanup = () => {
+        if (server.listening) {
+          server.close();
+        }
+        for (const socket of sockets) {
+          socket.destroy();
+        }
+        sockets.clear();
+      };
 
       server.listen(8085, () => {
         // Open browser
@@ -81,9 +102,23 @@ import * as crypto from 'crypto';
         vscode.env.openExternal(vscode.Uri.parse(authUrl));
       });
 
-      server.on('error', (err) => {
-        reject(err);
+      server.on('error', (err: any) => {
+        if (err.code === 'EADDRINUSE') {
+          reject(new Error('Port 8085 is in use. Please check if another login process is running or wait a moment.'));
+        } else {
+          reject(err);
+        }
+        // Attempt cleanup if possible, though server might not be listening
+        cleanup(); 
       });
+
+      // Timeout after 2 minutes to prevent hanging server if user abandons login
+      setTimeout(() => {
+        if (server.listening) {
+          cleanup();
+          reject(new Error('Login timed out. Please try again.'));
+        }
+      }, 120000);
     });
   }
 

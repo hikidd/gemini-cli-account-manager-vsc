@@ -40,7 +40,7 @@ module.exports = {
     new Dotenv() // This will load .env and replace process.env.VARS in code
   ],
   
-  devtool: 'nosources-source-map', // Best practice for production
+  devtool: 'source-map', // Best practice for production
   infrastructureLogging: {
     level: "log", // enables logging required for problem matchers
   },

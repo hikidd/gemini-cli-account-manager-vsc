@@ -1,8 +1,8 @@
 {
   "name": "gemini-cli-account-manager",
-  "displayName": "Gemini CLI 账号助手",
+  "displayName": "Gemini CLI Account Manager",
   "description": "Manage multiple Google accounts for Gemini CLI.",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "publisher": "hi-kidd",
   "icon": "logo.png",
   "engines": {
@@ -17,6 +17,10 @@
     "account",
     "manager"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hikidd/gemini-cli-account-manager-vsc.git"
+  },
   "activationEvents": [
     "onView:gemini-manager.sidebarView"
   ],

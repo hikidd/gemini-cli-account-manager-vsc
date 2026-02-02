@@ -11,7 +11,8 @@ export interface GeminiAccount {
   isActive: boolean;
   createdAt: string;
   avatarUrl?: string;            // 用户头像 URL
-  type?: 'FREE' | 'PRO';         // 账号类型
+  type?: 'FREE' | 'PRO' | 'ULTRA'; // 账号类型
+  tierId?: string;               // 原始 Tier ID (用于调试)
   quota?: {
     buckets: Array<{
       modelId: string;

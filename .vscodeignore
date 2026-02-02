@@ -9,3 +9,4 @@ tsconfig.json
 !src/webview/*.html
 !src/webview/*.js
 !src/webview/*.css
+.env

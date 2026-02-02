@@ -1,8 +1,8 @@
-# Gemini CLI 账号助手 (Gemini CLI Account Manager)
+# Gemini CLI Account Manager
 
 [English](README_EN.md)
 
-**Gemini CLI 账号助手** 是一款 VS Code 扩展，专为管理 Gemini CLI 工具的多个 Google 账号凭证而设计。
+**Gemini CLI Account Manager** 是一款 VS Code 扩展，专为管理 Gemini CLI 工具的多个 Google 账号凭证而设计。
 
 ### 功能特性
 
@@ -17,6 +17,12 @@
 2. 点击 **"+ 添加账号"** 按钮，通过浏览器完成 Google 登录。
 3. 在账号卡片上点击 **"切换"** 按钮即可激活该账号。
 4. 点击顶部的 **"ZH/EN"** 按钮可切换语言。
+
+### 交流群
+
+如果您在使用过程中遇到问题，欢迎加入 QQ 交流群：
+
+![QQ 群](qqqun.jpg)
 
 ### 开发指南
 

@@ -151,6 +151,24 @@ body {
     letter-spacing: 0.5px;
 }
 
+.badge.free {
+    background-color: var(--vscode-charts-lines);
+    color: var(--vscode-editor-background);
+}
+
+.badge.pro {
+    background-color: var(--vscode-badge-background);
+    color: var(--vscode-badge-foreground);
+}
+
+.badge.ultra {
+    background: linear-gradient(135deg, #1e88e5 0%, #9c27b0 50%, #e91e63 100%);
+    color: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.2);
+    text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+}
+
 .models-container {
     display: flex;
     gap: 10px;

@@ -106,10 +106,16 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     const account = this.accountManager.getAccount(id);
     if (!account) return;
 
-    // Refresh Project ID & Quota
-    const projectId = await this.quotaService.fetchProjectId(account);
-    if (projectId) {
-      account.projectId = projectId;
+    // Refresh Project ID & Quota & Account Type
+    const accountInfo = await this.quotaService.fetchAccountInfo(account);
+    if (accountInfo.projectId) {
+      account.projectId = accountInfo.projectId;
+    }
+    if (accountInfo.type) {
+      account.type = accountInfo.type;
+    }
+    if (accountInfo.tierId) {
+      account.tierId = accountInfo.tierId;
     }
     
     const quotaData = await this.quotaService.fetchQuota(account);
@@ -125,10 +131,16 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
   private async handleLogin() {
     const account = await this.authService.startLogin();
     
-    // 1. Fetch Project ID
-    const projectId = await this.quotaService.fetchProjectId(account);
-    if (projectId) {
-      account.projectId = projectId;
+    // 1. Fetch Project ID & Account Type
+    const accountInfo = await this.quotaService.fetchAccountInfo(account);
+    if (accountInfo.projectId) {
+      account.projectId = accountInfo.projectId;
+    }
+    if (accountInfo.type) {
+      account.type = accountInfo.type;
+    }
+    if (accountInfo.tierId) {
+      account.tierId = accountInfo.tierId;
     }
 
     // 2. Fetch Quota
@@ -168,10 +180,16 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
     const account = await this.accountManager.setActiveAccount(id);
     if (account) {
-      // Refresh Project ID & Quota on switch
-      const projectId = await this.quotaService.fetchProjectId(account);
-      if (projectId) {
-        account.projectId = projectId;
+      // Refresh Project ID & Quota & Type on switch
+      const accountInfo = await this.quotaService.fetchAccountInfo(account);
+      if (accountInfo.projectId) {
+        account.projectId = accountInfo.projectId;
+      }
+      if (accountInfo.type) {
+        account.type = accountInfo.type;
+      }
+      if (accountInfo.tierId) {
+        account.tierId = accountInfo.tierId;
       }
       
       const quotaData = await this.quotaService.fetchQuota(account);

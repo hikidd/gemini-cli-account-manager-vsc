@@ -22,7 +22,7 @@
             'switched': 'Switched to'
         },
         'zh': {
-            'title': 'Gemini CLI 账号助手',
+            'title': 'Gemini CLI Account Manager',
             'addAccount': '+ 添加账号',
             'switch': '切换',
             'remove': '移除',
@@ -196,16 +196,24 @@
                 const modelsHtml = `<div class="models-container" style="display:block; padding-top:4px;">${quotaHtml}</div>`;
 
                 const lastUsed = new Date(account.createdAt).toLocaleDateString(currentLang === 'zh' ? 'zh-CN' : 'en-US');
+                
+                const tierTooltip = account.tierId ? `Tier: ${account.tierId}` : 'Tier: Unknown';
+                
+                let badgeHtml = '';
+                if (account.type === 'ULTRA') {
+                    badgeHtml = `<div class="badge ultra" title="${tierTooltip}" style="cursor:help;">ULTRA</div>`;
+                } else if (account.type === 'PRO') {
+                     badgeHtml = `<div class="badge pro" title="${tierTooltip}" style="cursor:help;">PRO</div>`;
+                } else {
+                     badgeHtml = `<div class="badge free" title="${tierTooltip}" style="cursor:help;">FREE</div>`;
+                }
 
                 card.innerHTML = `
                     <div class="card-header">
                         <img src="${avatarSrc}" class="avatar" alt="Avatar">
                         <div class="user-info">
                             <div class="email" title="${account.email}">${account.email}</div>
-                            ${account.type === 'PRO' 
-                                ? `<div class="badge" style="background-color: var(--vscode-badge-background); color: var(--vscode-badge-foreground);">PRO</div>` 
-                                : `<div class="badge" style="background-color: var(--vscode-charts-lines); color: var(--vscode-editor-background);">FREE</div>`
-                            }
+                            ${badgeHtml}
                         </div>
                     </div>
                     ${modelsHtml}

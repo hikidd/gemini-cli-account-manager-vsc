@@ -25,12 +25,12 @@ export class GeminiQuotaService {
   private readonly BASE_URL = 'https://cloudcode-pa.googleapis.com/v1internal';
 
   /**
-   * Fetches the Project ID associated with the account's token.
+   * Fetches the Project ID and Account Tier associated with the account's token.
    * This mimics the 'loadCodeAssist' call from the official CLI.
    */
-  public async fetchProjectId(account: GeminiAccount): Promise<string | undefined> {
+  public async fetchAccountInfo(account: GeminiAccount): Promise<{ projectId?: string; type?: 'FREE' | 'PRO' | 'ULTRA'; tierId?: string }> {
     try {
-      console.log(`[GeminiQuotaService] Fetching Project ID for ${account.email}...`);
+      console.log(`[GeminiQuotaService] Fetching Account Info for ${account.email}...`);
       const response = await axios.post<LoadCodeAssistResponse>(
         `${this.BASE_URL}:loadCodeAssist`,
         {}, 
@@ -42,15 +42,50 @@ export class GeminiQuotaService {
         }
       );
       
-      console.log(`[GeminiQuotaService] Project ID response:`, response.data);
-      return response.data.cloudaicompanionProject?.id;
+      console.log(`[GeminiQuotaService] Account Info response:`, response.data);
+      
+      const projectId = response.data.cloudaicompanionProject?.id;
+      let type: 'FREE' | 'PRO' | 'ULTRA' = 'FREE'; // Default
+      let rawTierId = '';
+
+      // Infer type from currentTier
+      if (response.data.currentTier) {
+        const tierId = (response.data.currentTier.id || '').toLowerCase();
+        const tierName = (response.data.currentTier.name || '').toLowerCase();
+        rawTierId = response.data.currentTier.id || ''; // Store original case
+        
+        console.log(`[GeminiQuotaService] Tier Detection - ID: ${tierId}, Name: ${tierName}`);
+
+        // Check for ULTRA / Advanced first (Highest priority)
+        const isUltra = tierId.includes('advanced') || tierId.includes('ultra') || 
+                        tierName.includes('advanced') || tierName.includes('ultra');
+
+        // Check for PRO / Premium / Standard
+        const isPro = tierId.includes('pro') || tierId.includes('premium') || tierId.includes('standard') ||
+                      tierName.includes('pro') || tierName.includes('premium') || tierName.includes('standard');
+        
+        // Anti-check: Ensure it's not explicitly free
+        const isFree = tierId.includes('free') || tierId.includes('basic') || tierName.includes('free');
+
+        if (isUltra) {
+          type = 'ULTRA';
+        } else if (isPro && !isFree) {
+          type = 'PRO';
+        } else if (!isFree && tierId !== '') {
+            // Fallback: if it's not explicitly free and has a tier ID, assume PRO
+            console.log('[GeminiQuotaService] Tier ID is present and not free/basic, assuming PRO.');
+            type = 'PRO';
+        }
+      }
+
+      return { projectId, type, tierId: rawTierId };
     } catch (error: any) {
-      console.error('[GeminiQuotaService] Failed to fetch Project ID:', error.response?.data || error.message);
+      console.error('[GeminiQuotaService] Failed to fetch Account Info:', error.response?.data || error.message);
       
       // Fallback to hardcoded ID for debugging/development
       const fallbackId = 'astute-impulse-485515-q7';
       console.warn(`[GeminiQuotaService] Using fallback Project ID: ${fallbackId}`);
-      return fallbackId;
+      return { projectId: fallbackId, type: 'FREE', tierId: 'error_fallback' };
     }
   }
 
@@ -60,9 +95,10 @@ export class GeminiQuotaService {
   public async fetchQuota(account: GeminiAccount): Promise<QuotaResponse | null> {
     if (!account.projectId) {
       // Try to fetch it if missing
-      const fetchedId = await this.fetchProjectId(account);
-      if (fetchedId) {
-        account.projectId = fetchedId;
+      const info = await this.fetchAccountInfo(account);
+      if (info.projectId) {
+        account.projectId = info.projectId;
+        if (info.type) account.type = info.type; // Bonus: update type as well
       } else {
         console.warn('[GeminiQuotaService] Cannot fetch quota: Missing Project ID');
         return null;

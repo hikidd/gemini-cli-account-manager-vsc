@@ -35,7 +35,8 @@ export class GoogleAuthService {
       expiresAt: Date.now() + (tokens.expires_in * 1000),
       isActive: false,
       createdAt: new Date().toISOString(),
-      avatarUrl: userInfo.picture
+      avatarUrl: userInfo.picture,
+      type: 'FREE' // Default to Free tier
     };
   }
 

@@ -99,7 +99,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
   private async handleLogin() {
     const account = await this.authService.startLogin();
     await this.accountManager.saveAccount(account);
-    await this.cliService.updateCredentials(account); // Auto-activate new login? Usually yes.
+    await this.accountManager.setActiveAccount(account.id); // Auto-switch
+    await this.cliService.updateCredentials(account);
     await this.terminalManager.refreshTerminal(account);
     await this.sendState();
     vscode.window.showInformationMessage(`Successfully logged in as ${account.email}`);
@@ -116,8 +117,20 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
   }
 
   private async handleRemoveAccount(id: string) {
-    await this.accountManager.removeAccount(id);
-    await this.sendState();
+    const lang = this.accountManager.getLanguage();
+    const message = lang === 'zh' ? '确定要移除该账号吗？' : 'Are you sure you want to remove this account?';
+    const confirmBtn = lang === 'zh' ? '确定' : 'Yes';
+    
+    const answer = await vscode.window.showWarningMessage(
+      message,
+      { modal: true },
+      confirmBtn
+    );
+
+    if (answer === confirmBtn) {
+      await this.accountManager.removeAccount(id);
+      await this.sendState();
+    }
   }
 
   private async handleSetLanguage(language: 'zh' | 'en') {

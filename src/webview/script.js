@@ -122,36 +122,52 @@
             card.innerHTML = `
                 <div class="card-header">
                     <img src="${avatarSrc}" class="avatar" alt="Avatar">
-                    <div class="email">${account.email}</div>
-                    <div class="badge">PRO</div>
+                    <div class="user-info">
+                        <div class="email" title="${account.email}">${account.email}</div>
+                        ${account.type === 'PRO' 
+                            ? `<div class="badge" style="background-color: var(--vscode-badge-background); color: var(--vscode-badge-foreground);">PRO</div>` 
+                            : `<div class="badge" style="background-color: var(--vscode-charts-lines); color: var(--vscode-editor-background);">FREE</div>`
+                        }
+                    </div>
                 </div>
                 ${modelsHtml}
-                <div class="last-used">${t('lastLogin')}: ${lastUsed}</div>
-                <div class="actions">
-                    ${!account.isActive ? `<button class="btn btn-sm" onclick="switchAccount('${account.id}')">${t('switch')}</button>` : `<span style="font-size:11px; align-self:center; margin-right:5px; color:#4caf50;">${t('active')}</span>`}
-                    <button class="btn btn-secondary btn-sm" onclick="removeAccount('${account.id}')">${t('remove')}</button>
+                <div class="footer">
+                    <div class="last-used">${t('lastLogin')}: ${lastUsed}</div>
+                    <div class="actions">
+                        ${!account.isActive 
+                            ? `<button class="btn btn-sm action-switch" data-id="${account.id}">${t('switch')}</button>` 
+                            : `<button class="btn btn-sm" disabled style="opacity: 0.7; cursor: default;">${t('active')}</button>`}
+                        <button class="btn btn-secondary btn-sm action-remove" data-id="${account.id}">${t('remove')}</button>
+                    </div>
                 </div>
             `;
 
             accountList.appendChild(card);
+
+            // Add Event Listeners directly
+            const switchBtn = card.querySelector('.action-switch');
+            const removeBtn = card.querySelector('.action-remove');
+
+            if (switchBtn) {
+                switchBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent bubbling issues
+                    vscode.postMessage({
+                        type: 'switchAccount',
+                        payload: { id: account.id }
+                    });
+                });
+            }
+
+            if (removeBtn) {
+                removeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    vscode.postMessage({
+                        type: 'removeAccount',
+                        payload: { id: account.id }
+                    });
+                });
+            }
         });
     }
-
-    // Expose functions to global scope
-    window.switchAccount = (id) => {
-        vscode.postMessage({
-            type: 'switchAccount',
-            payload: { id }
-        });
-    };
-
-    window.removeAccount = (id) => {
-        if (confirm(t('confirmRemove'))) {
-            vscode.postMessage({
-                type: 'removeAccount',
-                payload: { id }
-            });
-        }
-    };
 
 })();

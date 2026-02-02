@@ -8,6 +8,7 @@ export interface GeminiAccount {
   isActive: boolean;
   createdAt: string;
   avatarUrl?: string;            // 用户头像 URL
+  type?: 'FREE' | 'PRO';         // 账号类型
 }
 
 export type MessageType = 

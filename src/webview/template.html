@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini CLI 账号助手</title>
+    <style>
+        body {
+            font-family: var(--vscode-font-family);
+            padding: 10px;
+            color: var(--vscode-foreground);
+            background-color: var(--vscode-sideBar-background);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .title {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .btn {
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: none;
+            padding: 6px 12px;
+            cursor: pointer;
+            border-radius: 2px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        .btn:hover {
+            background-color: var(--vscode-button-hoverBackground);
+        }
+        .btn-icon {
+            padding: 4px;
+            background: transparent;
+            color: var(--vscode-icon-foreground);
+        }
+        .btn-icon:hover {
+            background-color: var(--vscode-toolbar-hoverBackground);
+        }
+        .btn-secondary {
+            background-color: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+        }
+        .btn-secondary:hover {
+            background-color: var(--vscode-button-secondaryHoverBackground);
+        }
+        
+        .account-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .account-card {
+            background-color: var(--vscode-list-hoverBackground); /* Fallback */
+            background-color: var(--vscode-editor-background);
+            border: 1px solid var(--vscode-widget-border);
+            border-radius: 4px;
+            padding: 10px;
+            position: relative;
+        }
+
+        .account-card.active {
+            border-left: 3px solid var(--vscode-progressBar-background);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: #ccc;
+            object-fit: cover;
+        }
+
+        .email {
+            font-weight: 500;
+            flex-grow: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .badge {
+            font-size: 10px;
+            padding: 2px 4px;
+            border-radius: 3px;
+            background-color: var(--vscode-badge-background);
+            color: var(--vscode-badge-foreground);
+        }
+
+        .models-container {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .model-chip {
+            flex: 1;
+            background-color: var(--vscode-textBlockQuote-background);
+            padding: 6px;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+
+        .model-name {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .model-info {
+            display: flex;
+            justify-content: space-between;
+            color: var(--vscode-descriptionForeground);
+        }
+
+        .last-used {
+            font-size: 10px;
+            color: var(--vscode-descriptionForeground);
+            margin-bottom: 8px;
+            text-align: right;
+        }
+
+        .actions {
+            display: flex;
+            gap: 6px;
+            justify-content: flex-end;
+        }
+
+        .btn-sm {
+            padding: 3px 8px;
+            font-size: 11px;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span class="title" data-i18n="title">Account Manager</span>
+        <div class="header-actions">
+             <button id="langToggle" class="btn btn-icon" title="Switch Language">
+                ZH/EN
+            </button>
+            <button id="loginBtn" class="btn">
+                <span data-i18n="addAccount">+ Add Account</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="accountList" class="account-list">
+        <!-- Accounts will be injected here -->
+    </div>
+
+    <script src="{{SCRIPT_URI}}"></script>
+</body>
+</html>

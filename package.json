@@ -1,0 +1,67 @@
+{
+  "name": "gemini-cli-account-manager",
+  "displayName": "Gemini CLI 账号助手",
+  "description": "Manage multiple Google accounts for Gemini CLI.",
+  "version": "1.0.0",
+  "publisher": "hi-kidd",
+  "icon": "logo.png",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "gemini",
+    "cli",
+    "account",
+    "manager"
+  ],
+  "activationEvents": [
+    "onView:gemini-manager.sidebarView"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "gemini-manager-sidebar",
+          "title": "Gemini Manager",
+          "icon": "resources/sidebar-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "gemini-manager-sidebar": [
+        {
+          "type": "webview",
+          "id": "gemini-manager.sidebarView",
+          "name": "Account Manager"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "gemini-manager.openPanel",
+        "title": "Open Gemini Account Manager",
+        "category": "Gemini Manager",
+        "icon": "$(account)"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "dev": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.80.0",
+    "typescript": "^5.0.0",
+    "@vscode/vsce": "^2.19.0"
+  },
+  "license": "MIT"
+}

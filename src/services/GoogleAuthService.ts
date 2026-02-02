@@ -89,7 +89,7 @@ export class GoogleAuthService {
       response_type: 'code',
       scope: this.SCOPES.join(' '),
       access_type: 'offline', // Important for refresh_token
-      prompt: 'consent'       // Force consent to ensure refresh_token is returned
+      prompt: 'select_account' // Force account selection to allow adding different users
     });
 
     return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;

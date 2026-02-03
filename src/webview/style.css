@@ -1,6 +1,7 @@
 body {
     font-family: var(--vscode-font-family);
     padding: 16px;
+    padding-bottom: 240px; /* Space for fixed control panel */
     color: var(--vscode-foreground);
     background-color: var(--vscode-sideBar-background);
 }
@@ -68,7 +69,6 @@ body {
     background-color: transparent;
     color: var(--vscode-textLink-foreground);
     border: 1px solid var(--vscode-button-secondaryBackground);
-    /* Or generic border */
 }
 
 .btn-secondary:hover {
@@ -102,7 +102,6 @@ body {
     box-shadow: 0 0 0 1px var(--vscode-progressBar-background);
 }
 
-/* Active indicator dot */
 .account-card.active::before {
     content: '';
     position: absolute;
@@ -134,7 +133,6 @@ body {
 .avatar.pro-ring {
     border: none;
     padding: 2px;
-    /* Thickness of the ring */
     background: conic-gradient(from 0deg, #EA4335 0deg 90deg, #4285F4 90deg 180deg, #34A853 180deg 270deg, #FBBC04 270deg 360deg);
     border-radius: 50%;
 }
@@ -142,6 +140,7 @@ body {
 .user-info {
     display: flex;
     flex-direction: column;
+    justify-content: center;
     overflow: hidden;
 }
 
@@ -192,28 +191,6 @@ body {
     margin-bottom: 16px;
 }
 
-.model-chip {
-    flex: 1;
-    background-color: var(--vscode-textBlockQuote-background);
-    padding: 8px 10px;
-    border-radius: 4px;
-    font-size: 11px;
-    border-left: 3px solid var(--vscode-activityBarBadge-background);
-}
-
-.model-name {
-    font-weight: 600;
-    margin-bottom: 4px;
-    color: var(--vscode-editor-foreground);
-}
-
-.model-info {
-    display: flex;
-    justify-content: space-between;
-    color: var(--vscode-descriptionForeground);
-    font-size: 10px;
-}
-
 .footer {
     display: flex;
     justify-content: space-between;
@@ -240,36 +217,151 @@ body {
     height: 24px;
 }
 
-.hidden {
-    display: none;
-}
+/* --- Bottom Control Panel Styles --- */
 
-@keyframes spin {
-    100% {
-        transform: rotate(360deg);
-    }
-}
-
-.codicon-modifier-spin {
-    animation: spin 1s infinite linear;
-    display: inline-block;
-}
-
-.user-info {
+.bottom-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 16px;
+    background-color: var(--vscode-editor-background); /* Darker/different bg */
+    border-top: 1px solid var(--vscode-panel-border);
+    z-index: 100;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    overflow: hidden;
+    gap: 12px;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.project-id {
-    font-size: 10px;
-    color: var(--vscode-descriptionForeground);
-    margin-top: 2px;
-    opacity: 0.8;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+/* Auto Accept Section */
+.auto-accept-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--vscode-sideBar-background); /* Slightly lighter */
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--vscode-widget-border);
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--vscode-editor-foreground);
+}
+
+/* Toggle Switch */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 36px;
+    height: 20px;
+}
+
+.switch input { 
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--vscode-input-background);
+    -webkit-transition: .4s;
+    transition: .4s;
+    border: 1px solid var(--vscode-widget-border);
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 2px;
+    bottom: 2px;
+    background-color: var(--vscode-icon-foreground);
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+
+input:checked + .slider {
+    background-color: #4caf50; /* Green */
+    border-color: #4caf50;
+}
+
+input:checked + .slider:before {
+    -webkit-transform: translateX(16px);
+    -ms-transform: translateX(16px);
+    transform: translateX(16px);
+    background-color: white;
+}
+
+.slider.round {
+    border-radius: 20px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+/* Panel Grid (Blue Buttons) */
+.panel-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+}
+
+.btn-panel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    color: white;
+    transition: opacity 0.2s;
+}
+
+.btn-panel svg {
+    opacity: 0.9;
+}
+
+.btn-panel:hover {
+    opacity: 0.9;
+}
+
+.btn-blue {
+    background-color: #0078d4; /* VS Code Blue */
+}
+
+/* Footer Grid (Dark Buttons) */
+.panel-footer-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.btn-dark {
+    background-color: var(--vscode-button-secondaryBackground);
+    color: var(--vscode-button-secondaryForeground);
+    border: 1px solid transparent;
+}
+
+.btn-dark:hover {
+    background-color: var(--vscode-button-secondaryHoverBackground);
 }
 
 .quota-section {
@@ -299,9 +391,4 @@ body {
     background-color: var(--vscode-progressBar-background);
     transition: width 0.3s ease;
     min-width: 4px;
-}
-
-.name {
-    font-weight: 600;
-    font-size: 13px;
 }

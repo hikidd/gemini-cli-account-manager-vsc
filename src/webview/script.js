@@ -14,7 +14,7 @@
             'remove': 'Remove',
             'refresh': 'Refresh',
             'active': 'Active',
-            'lastLogin': 'Last login',
+            'lastRefreshed': 'Last refresh',
             'noAccounts': 'No accounts found. Please login.',
             'confirmRemove': 'Are you sure you want to remove this account?',
             'unknown': 'Unknown',
@@ -28,7 +28,7 @@
             'remove': '移除',
             'refresh': '刷新',
             'active': '当前使用',
-            'lastLogin': '上次登录',
+            'lastRefreshed': '上次刷新',
             'noAccounts': '暂无账号，请点击添加。',
             'confirmRemove': '确定要移除该账号吗？',
             'unknown': '未知',
@@ -195,7 +195,10 @@
                 // Wrap it in a container
                 const modelsHtml = `<div class="models-container" style="display:block; padding-top:4px;">${quotaHtml}</div>`;
 
-                const lastUsed = new Date(account.createdAt).toLocaleDateString(currentLang === 'zh' ? 'zh-CN' : 'en-US');
+                // Use lastRefreshed if available, otherwise use createdAt
+                const timeToDisplay = account.lastRefreshed ? new Date(account.lastRefreshed) : new Date(account.createdAt);
+                const lastUsed = timeToDisplay.toLocaleDateString(currentLang === 'zh' ? 'zh-CN' : 'en-US') + ' ' + 
+                                 timeToDisplay.toLocaleTimeString(currentLang === 'zh' ? 'zh-CN' : 'en-US', { hour: '2-digit', minute: '2-digit' });
 
                 const tierTooltip = account.tierId ? `Tier: ${account.tierId}` : 'Tier: Unknown';
 
@@ -221,7 +224,7 @@
                     </div>
                     ${modelsHtml}
                     <div class="footer">
-                        <div class="last-used">${t('lastLogin')}: ${lastUsed}</div>
+                        <div class="last-used">${t('lastRefreshed')}: ${lastUsed}</div>
                         <div class="actions">
                             <button class="btn btn-sm action-refresh-quota" data-id="${account.id}">${t('refresh')}</button>
                             ${!account.isActive

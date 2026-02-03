@@ -11,7 +11,7 @@ interface QuotaResponse {
 }
 
 interface LoadCodeAssistResponse {
-  cloudaicompanionProject?: {
+  cloudaicompanionProject?: string | {
     id: string; // The Project ID
     number: string;
   };
@@ -44,7 +44,14 @@ export class GeminiQuotaService {
       
       console.log(`[GeminiQuotaService] Account Info response:`, JSON.stringify(response.data, null, 2));
       
-      const projectId = response.data.cloudaicompanionProject?.id;
+      let projectId: string | undefined;
+      const rawProject = response.data.cloudaicompanionProject;
+      if (typeof rawProject === 'string') {
+        projectId = rawProject;
+      } else {
+        projectId = rawProject?.id;
+      }
+
       let type: 'FREE' | 'PRO' | 'ULTRA' = 'FREE'; // Default
       let rawTierId = '';
 

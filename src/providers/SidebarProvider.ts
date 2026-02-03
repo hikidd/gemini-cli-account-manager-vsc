@@ -181,6 +181,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       account.quota = { buckets: quotaData.buckets };
     }
 
+    account.lastRefreshed = Date.now();
+
     await this.accountManager.saveAccount(account);
     
     if (!silent) {

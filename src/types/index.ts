@@ -13,6 +13,7 @@ export interface GeminiAccount {
   avatarUrl?: string;            // 用户头像 URL
   type?: 'FREE' | 'PRO' | 'ULTRA'; // 账号类型
   tierId?: string;               // 原始 Tier ID (用于调试)
+  lastRefreshed?: number;        // 上次刷新配额时间戳
   quota?: {
     buckets: Array<{
       modelId: string;

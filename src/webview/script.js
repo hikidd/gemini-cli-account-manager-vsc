@@ -52,6 +52,42 @@
         });
     });
 
+    // Bottom Panel Listeners
+    const btnRules = document.getElementById('btnRules');
+    if (btnRules) {
+        btnRules.addEventListener('click', () => {
+            vscode.postMessage({ type: 'openFile', payload: { file: 'rules' } });
+        });
+    }
+
+    const btnMCP = document.getElementById('btnMCP');
+    if (btnMCP) {
+        btnMCP.addEventListener('click', () => {
+            vscode.postMessage({ type: 'openFile', payload: { file: 'mcp' } });
+        });
+    }
+
+    const btnReset = document.getElementById('btnReset');
+    if (btnReset) {
+        btnReset.addEventListener('click', () => {
+            vscode.postMessage({ type: 'restart' });
+        });
+    }
+
+    const btnFeedback = document.getElementById('btnFeedback');
+    if (btnFeedback) {
+        btnFeedback.addEventListener('click', () => {
+            vscode.postMessage({ type: 'openUrl', payload: { url: 'https://github.com/hikidd/gemini-cli-account-manager-vsc/issues' } });
+        });
+    }
+
+    const btnStar = document.getElementById('btnStar');
+    if (btnStar) {
+        btnStar.addEventListener('click', () => {
+            vscode.postMessage({ type: 'openUrl', payload: { url: 'https://github.com/hikidd/gemini-cli-account-manager-vsc' } });
+        });
+    }
+
     window.addEventListener('message', event => {
         const message = event.data;
         switch (message.type) {
@@ -160,7 +196,7 @@
                                 <div class="quota-row" style="margin-bottom:4px;">
                                     <div class="quota-header" style="display:grid; grid-template-columns: 1fr auto 1fr; align-items:center; font-size:10px;">
                                         <span style="justify-self:start; font-weight:600;">${target.name}</span>
-                                        <span style="justify-self:center; font-size:9px; opacity:0.7;">${resetText ? '⟳ ' + resetText : ''}</span>
+                                        <span class="reset-text" style="justify-self:center;">${resetText ? resetText : ''}</span>
                                         <span style="justify-self:end;">${(remaining * 100).toFixed(1)}%</span>
                                     </div>
                                     <div class="progress-track">
@@ -199,6 +235,9 @@
                 const timeToDisplay = account.lastRefreshed ? new Date(account.lastRefreshed) : new Date(account.createdAt);
                 const lastUsed = timeToDisplay.toLocaleDateString(currentLang === 'zh' ? 'zh-CN' : 'en-US') + ' ' + 
                                  timeToDisplay.toLocaleTimeString(currentLang === 'zh' ? 'zh-CN' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+                
+                // Construct Last Refreshed HTML for Header
+                const lastRefreshedHtml = `<div class="last-refreshed" style="font-size: 10px; color: var(--vscode-descriptionForeground); margin-top: 2px;">${t('lastRefreshed')}: ${lastUsed}</div>`;
 
                 const tierTooltip = account.tierId ? `Tier: ${account.tierId}` : 'Tier: Unknown';
 
@@ -219,13 +258,15 @@
                         <img src="${avatarSrc}" class="${avatarClass}" alt="Avatar">
                         <div class="user-info">
                             <div class="email" title="${account.email}">${account.email}</div>
-                            ${badgeHtml}
+                            <div style="display:flex; gap: 8px; align-items: center;">
+                                ${badgeHtml}
+                                ${lastRefreshedHtml}
+                            </div>
                         </div>
                     </div>
                     ${modelsHtml}
                     <div class="footer">
-                        <div class="last-used">${t('lastRefreshed')}: ${lastUsed}</div>
-                        <div class="actions">
+                        <div class="actions" style="width: 100%; display: flex; justify-content: flex-end; gap: 8px;">
                             <button class="btn btn-sm action-refresh-quota" data-id="${account.id}">${t('refresh')}</button>
                             ${!account.isActive
                         ? `<button class="btn btn-sm action-switch" data-id="${account.id}">${t('switch')}</button>`

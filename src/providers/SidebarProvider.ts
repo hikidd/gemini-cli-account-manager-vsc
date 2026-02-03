@@ -121,11 +121,68 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         case 'refreshQuota':
           await this.handleRefreshQuota(message.payload.id);
           break;
+        case 'openFile':
+          await this.handleOpenFile(message.payload.file);
+          break;
+        case 'restart':
+          await this.handleRestart();
+          break;
+        case 'openUrl':
+          await this.handleOpenUrl(message.payload.url);
+          break;
       }
     } catch (error: any) {
       vscode.window.showErrorMessage(`Error: ${error.message}`);
       this.sendError(error.message);
     }
+  }
+
+  private async handleOpenFile(file: string) {
+      const homeDir = process.env.HOME || process.env.USERPROFILE || '';
+      const geminiDir = path.join(homeDir, '.gemini');
+      let targetPath = '';
+
+      if (file === 'rules') {
+          targetPath = path.join(geminiDir, 'GEMINI.md');
+      } else if (file === 'mcp') {
+          targetPath = path.join(geminiDir, 'settings.json'); 
+      }
+
+      if (targetPath && fs.existsSync(targetPath)) {
+          const doc = await vscode.workspace.openTextDocument(targetPath);
+          await vscode.window.showTextDocument(doc);
+      } else {
+          // If file doesn't exist, try opening the directory or notify
+           if (fs.existsSync(geminiDir)) {
+               // Try to open a default file or just warn
+                vscode.window.showWarningMessage(`File not found: ${targetPath}. Opening directory...`);
+                // There isn't a direct "open directory" in VSCode API like openTextDocument, 
+                // but we can try to find *any* file or just tell the user.
+                // Better: Create the file if it's 'rules' (GEMINI.md) as it's common.
+                if (file === 'rules') {
+                    fs.writeFileSync(targetPath, '# Gemini Rules\n\nAdd your rules here.');
+                    const doc = await vscode.workspace.openTextDocument(targetPath);
+                    await vscode.window.showTextDocument(doc);
+                    return;
+                }
+           }
+           vscode.window.showErrorMessage(`File not found: ${targetPath}`);
+      }
+  }
+
+  private async handleRestart() {
+      const activeAccount = this.accountManager.getActiveAccount();
+      const lang = this.accountManager.getLanguage();
+      if (activeAccount) {
+          await this.terminalManager.refreshTerminal(activeAccount, lang);
+          vscode.window.showInformationMessage(lang === 'zh' ? 'Gemini CLI 已重启' : 'Gemini CLI Restarted');
+      } else {
+          vscode.window.showWarningMessage(lang === 'zh' ? '没有激活的账号' : 'No active account');
+      }
+  }
+
+  private async handleOpenUrl(url: string) {
+      vscode.env.openExternal(vscode.Uri.parse(url));
   }
 
   private async handleRefreshQuota(id: string) {

@@ -32,7 +32,10 @@ export type MessageType =
   | 'updateState'
   | 'error'
   | 'success'
-  | 'refreshQuota';
+  | 'refreshQuota'
+  | 'openFile'
+  | 'restart'
+  | 'openUrl';
 
 export interface Message {
   type: MessageType;

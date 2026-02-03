@@ -378,12 +378,12 @@ input:checked + .slider:before {
 }
 
 .progress-track {
-    width: 100%;
+    background-color: transparent; /* Match background */
     height: 6px;
-    background-color: var(--vscode-widget-border);
     border-radius: 3px;
     overflow: hidden;
-    margin-top: 2px;
+    position: relative;
+    /* width: 100%; */
 }
 
 .progress-fill {
@@ -391,4 +391,10 @@ input:checked + .slider:before {
     background-color: var(--vscode-progressBar-background);
     transition: width 0.3s ease;
     min-width: 4px;
+}
+
+.reset-text {
+    font-size: 12px;
+    font-weight: bold;
+    opacity: 0.9;
 }

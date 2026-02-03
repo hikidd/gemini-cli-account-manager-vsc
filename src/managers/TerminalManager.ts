@@ -41,5 +41,6 @@ export class TerminalManager {
     terminal.sendText(`echo "---------------------------------------------"`);
     terminal.sendText(`echo "${msg} (${account.type || 'FREE'})"`);
     terminal.sendText(`echo "---------------------------------------------"`);
+    terminal.sendText('gemini');
   }
 }

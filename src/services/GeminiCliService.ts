@@ -73,7 +73,7 @@ export class GeminiCliService {
     fs.writeFileSync(this.GOOGLE_ACCOUNTS_FILE, JSON.stringify(data, null, 2), 'utf8');
   }
 
-  private async updateOAuthCredsFile(account: GeminiAccount) {
+  public async updateOAuthCredsFile(account: GeminiAccount) {
     // Structure matches exactly what we saw in the user's file
     const creds = {
       access_token: account.accessToken,
@@ -85,5 +85,30 @@ export class GeminiCliService {
     };
 
     fs.writeFileSync(this.OAUTH_CREDS_FILE, JSON.stringify(creds, null, 2), 'utf8');
+  }
+
+  public getSettings(): any {
+    if (fs.existsSync(this.SETTINGS_FILE)) {
+      try {
+        return JSON.parse(fs.readFileSync(this.SETTINGS_FILE, 'utf8'));
+      } catch (e) {
+        console.warn('Failed to parse settings.json', e);
+      }
+    }
+    return {};
+  }
+
+  public saveSettings(newSettings: any) {
+    let currentSettings = this.getSettings();
+
+    // Deep merge logic for specific keys we care about
+    if (newSettings.model) {
+      currentSettings.model = { ...currentSettings.model, ...newSettings.model };
+    }
+    if (newSettings.tools) {
+      currentSettings.tools = { ...currentSettings.tools, ...newSettings.tools };
+    }
+
+    fs.writeFileSync(this.SETTINGS_FILE, JSON.stringify(currentSettings, null, 2), 'utf8');
   }
 }

@@ -8,7 +8,7 @@ body {
 
 .header {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     align-items: center;
     margin-bottom: 24px;
     padding-bottom: 8px;
@@ -234,15 +234,26 @@ body {
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
 }
 
-/* Auto Accept Section */
-.auto-accept-section {
+/* Settings Group Container */
+.settings-group {
+    background-color: var(--vscode-sideBar-background);
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Ensure children don't bleed out */
+}
+
+/* Individual Row */
+.settings-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: var(--vscode-sideBar-background); /* Slightly lighter */
     padding: 8px 12px;
-    border-radius: 6px;
-    border: 1px solid var(--vscode-widget-border);
+}
+
+.settings-row:not(:last-child) {
+    border-bottom: 1px solid var(--vscode-widget-border);
 }
 
 .section-title {
@@ -252,6 +263,24 @@ body {
     font-weight: 600;
     font-size: 13px;
     color: var(--vscode-editor-foreground);
+    white-space: nowrap;
+}
+
+.dropdown {
+    width: 130px;
+    padding: 4px 6px;
+    background-color: var(--vscode-dropdown-background);
+    color: var(--vscode-dropdown-foreground);
+    border: 1px solid var(--vscode-dropdown-border);
+    border-radius: 4px;
+    outline: none;
+    font-family: inherit;
+    font-size: 11px;
+    text-overflow: ellipsis;
+}
+
+.dropdown:focus {
+    border-color: var(--vscode-focusBorder);
 }
 
 /* Toggle Switch */
@@ -331,8 +360,8 @@ input:checked + .slider:before {
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
-    color: white;
-    transition: opacity 0.2s;
+    color: var(--vscode-button-foreground);
+    transition: background-color 0.2s;
 }
 
 .btn-panel svg {
@@ -340,11 +369,16 @@ input:checked + .slider:before {
 }
 
 .btn-panel:hover {
-    opacity: 0.9;
+    opacity: 1;
 }
 
 .btn-blue {
-    background-color: #0078d4; /* VS Code Blue */
+    background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+}
+
+.btn-blue:hover {
+    background-color: var(--vscode-button-hoverBackground);
 }
 
 /* Footer Grid (Dark Buttons) */

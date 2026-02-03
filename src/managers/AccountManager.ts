@@ -1,14 +1,17 @@
 import * as vscode from 'vscode';
 import { GeminiAccount } from '../types';
+import { GeminiCliService } from '../services/GeminiCliService';
 
 export class AccountManager {
   private context: vscode.ExtensionContext;
   private readonly ACCOUNTS_KEY = 'gemini-manager.accounts';
   private readonly LANGUAGE_KEY = 'gemini-manager.language';
   private _accounts: GeminiAccount[] = [];
+  private cliService: GeminiCliService;
 
   constructor(context: vscode.ExtensionContext) {
     this.context = context;
+    this.cliService = new GeminiCliService();
     this.loadAccounts();
   }
 
@@ -18,6 +21,14 @@ export class AccountManager {
 
   public async setLanguage(lang: 'zh' | 'en'): Promise<void> {
     await this.context.globalState.update(this.LANGUAGE_KEY, lang);
+  }
+
+  public getSettings(): any {
+    return this.cliService.getSettings();
+  }
+
+  public updateSettings(settings: any): void {
+    this.cliService.saveSettings(settings);
   }
 
   private loadAccounts() {

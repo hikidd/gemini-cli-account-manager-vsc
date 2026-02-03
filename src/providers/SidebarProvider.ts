@@ -130,11 +130,28 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         case 'openUrl':
           await this.handleOpenUrl(message.payload.url);
           break;
+        case 'updateSettings':
+          await this.handleUpdateSettings(message.payload);
+          break;
+        case 'refreshAll':
+          await this.handleRefreshAll();
+          break;
       }
     } catch (error: any) {
       vscode.window.showErrorMessage(`Error: ${error.message}`);
       this.sendError(error.message);
     }
+  }
+
+  private async handleRefreshAll() {
+    await this.refreshAllAccounts();
+    const lang = this.accountManager.getLanguage();
+    vscode.window.showInformationMessage(lang === 'zh' ? '所有账号配额已刷新' : 'All accounts refreshed');
+  }
+
+  private async handleUpdateSettings(payload: any) {
+    this.accountManager.updateSettings(payload);
+    await this.sendState();
   }
 
   private async handleOpenFile(file: string) {
@@ -170,11 +187,36 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       }
   }
 
+  private getTerminalOptions() {
+      const settings = this.accountManager.getSettings();
+      return {
+          model: settings.model?.name,
+          isYolo: settings.tools?.autoAccept
+      };
+  }
+
   private async handleRestart() {
       const activeAccount = this.accountManager.getActiveAccount();
       const lang = this.accountManager.getLanguage();
+
+      const message = lang === 'zh'
+        ? "重启将关闭当前终端。请确保已保存当前对话。确定继续吗？"
+        : "Restarting will close the current terminal. Please ensure you have saved your current session. Continue?";
+      
+      const confirmBtn = lang === 'zh' ? "确定" : "Continue";
+  
+      const selection = await vscode.window.showWarningMessage(
+        message,
+        { modal: true },
+        confirmBtn
+      );
+  
+      if (selection !== confirmBtn) {
+        return;
+      }
+
       if (activeAccount) {
-          await this.terminalManager.refreshTerminal(activeAccount, lang);
+          await this.terminalManager.refreshTerminal(activeAccount, lang, this.getTerminalOptions());
           vscode.window.showInformationMessage(lang === 'zh' ? 'Gemini CLI 已重启' : 'Gemini CLI Restarted');
       } else {
           vscode.window.showWarningMessage(lang === 'zh' ? '没有激活的账号' : 'No active account');
@@ -273,7 +315,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     await this.cliService.updateCredentials(account);
     
     const lang = this.accountManager.getLanguage();
-    await this.terminalManager.refreshTerminal(account, lang);
+    await this.terminalManager.refreshTerminal(account, lang, this.getTerminalOptions());
     
     await this.sendState();
     vscode.window.showInformationMessage(`Successfully logged in as ${account.email}`);
@@ -321,7 +363,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       await this.cliService.updateCredentials(account);
       
       // lang is already fetched
-      await this.terminalManager.refreshTerminal(account, lang);
+      await this.terminalManager.refreshTerminal(account, lang, this.getTerminalOptions());
       
       await this.sendState();
       vscode.window.showInformationMessage(`Switched to ${account.email}`);
@@ -354,9 +396,10 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     if (!this.view) return;
     const accounts = this.accountManager.getAccounts();
     const language = this.accountManager.getLanguage();
+    const settings = this.accountManager.getSettings();
     this.view.webview.postMessage({
       type: 'updateState',
-      payload: { accounts, language }
+      payload: { accounts, language, settings }
     });
   }
 

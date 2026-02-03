@@ -2,6 +2,8 @@
 
 [English](README_EN.md)
 
+![Screenshot](resources/screenshot-zh.png)
+
 **Gemini CLI Account Manager** 是一款 VS Code 扩展，专为管理 Gemini CLI 工具的多个 Google 账号凭证而设计。
 
 ### 功能特性

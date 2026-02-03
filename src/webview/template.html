@@ -8,10 +8,15 @@
 </head>
 <body>
     <div class="header">
+        <button id="langToggle" class="btn btn-icon" title="Switch Language" style="display:flex; align-items:center; gap:4px; padding-left:8px; padding-right:8px;">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 13a6 6 0 1 1 0-12A6 6 0 0 1 8 14zM8 2a6 6 0 0 0-2.6 11.4c-.6-1.5-1-3.3-1.2-5.4h7.6c-.1 2.1-.6 3.9-1.2 5.4A6 6 0 0 0 8 2zm0 12c-1.1 0-2.1-.5-2.8-1.4.6-1.3 1-3 1.1-4.6h3.4c.1 1.6.5 3.3 1.1 4.6-.7.9-1.7 1.4-2.8 1.4zm0-7H4.2c.1-1.6.5-3.3 1.1-4.6.7-.9 1.7-1.4 2.8-1.4 1.1 0 2.1.5 2.8 1.4-.6 1.3-1 3-1.1 4.6H8z"/></svg>
+            <span>ZH/EN</span>
+        </button>
 
         <div class="header-actions">
-             <button id="langToggle" class="btn btn-icon" title="Switch Language">
-                ZH/EN
+            <button id="refreshAllBtn" class="btn" title="Refresh All">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 4px;"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.75 8a4.5 4.5 0 0 1-8.61 1.5H2.1A6 6 0 0 0 14.25 8h1.7l-2.55-3.5L10.9 8h1.85zM3.25 8a4.5 4.5 0 0 1 8.61-1.5h2.04A6 6 0 0 0 1.75 8H.05l2.55 3.5L5.1 8H3.25z"/></svg>
+                <span data-i18n="refreshAll">Refresh All</span>
             </button>
             <button id="loginBtn" class="btn">
                 <span data-i18n="addAccount">+ Add Account</span>
@@ -25,16 +30,32 @@
 
     <!-- Bottom Control Panel -->
     <div class="bottom-panel">
-        <!-- Auto Accept Toggle -->
-        <div class="panel-section auto-accept-section">
-            <div class="section-title">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M9.8 12.3l1.1 1.1c.3.3.7.3 1 0l3-3c.3-.3.3-.7 0-1l-1-1-1.3-3.9c-.1-.3-.4-.5-.7-.5h-2.1l-2.6-2.6c-.3-.3-.7-.3-1 0l-.8.8c-.3.3-.3.7 0 1l2.6 2.6v2.1c0 .3.2.6.5.7l3.9 1.3-2.6 2.4zM4.7 9.3L1.5 6.1c-.2-.2-.2-.5 0-.7l2.8-2.8c.2-.2.5-.2.7 0l3.2 3.2L4.7 9.3z"/></svg>
-                <span>Auto-Accept</span>
+        <div class="settings-group">
+            <!-- Model Selector -->
+            <div class="settings-row">
+                <div class="section-title">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a2 2 0 0 1 2 2v2H6V3a2 2 0 0 1 2-2zm3 5V3a3 3 0 0 0-6 0v3H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-1z"/></svg>
+                    <span data-i18n="model">Model</span>
+                </div>
+                <select id="modelSelector" class="dropdown">
+                    <option value="gemini-3-flash-preview">Gemini 3 Flash</option>
+                    <option value="gemini-3-pro-preview">Gemini 3 Pro</option>
+                    <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                    <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                </select>
             </div>
-            <label class="switch">
-                <input type="checkbox" id="autoAcceptToggle" checked>
-                <span class="slider round"></span>
-            </label>
+
+            <!-- YOLO Mode Toggle -->
+            <div class="settings-row">
+                <div class="section-title">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M7.5 1v5h-4l6 9v-6h4l-6-9z"/></svg>
+                    <span data-i18n="yoloMode">YOLO Mode</span>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="autoAcceptToggle">
+                    <span class="slider round"></span>
+                </label>
+            </div>
         </div>
 
         <!-- Action Grid (Blue Buttons) -->
@@ -49,7 +70,7 @@
             </button>
             <button class="btn-panel btn-blue" id="btnReset">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M13.6 2.3C12.2.9 10.2 0 8 0 3.6 0 0 3.6 0 8h2c0-3.3 2.7-6 6-6 1.7 0 3.2.7 4.2 1.8L9 7h7V0l-2.4 2.3zM2.4 13.7C3.8 15.1 5.8 16 8 16c4.4 0 8-3.6 8-8h-2c0 3.3-2.7 6-6 6-1.7 0-3.2-.7-4.2-1.8L7 9H0v7l2.4-2.3z"/></svg>
-                <span>Reset</span>
+                <span data-i18n="restart">Restart</span>
             </button>
         </div>
 
@@ -57,7 +78,7 @@
         <div class="panel-footer-grid">
             <button class="btn-panel btn-dark" id="btnFeedback">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 12h5v1h-5v-1zm5-2h-5v1h5v-1zM8 4c-2.2 0-4 1.8-4 4v3l-1 1v1h10v-1l-1-1V8c0-2.2-1.8-4-4-4zm-2.5 5.5c-.3 0-.5-.2-.5-.5s.2-.5.5-.5.5.2.5.5-.2.5-.5.5zm5 0c-.3 0-.5-.2-.5-.5s.2-.5.5-.5.5.2.5.5-.2.5-.5.5z"/></svg>
-                <span>Feedback</span>
+                <span data-i18n="feedback">Feedback</span>
             </button>
             <button class="btn-panel btn-dark" id="btnStar">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 .2l2.5 5 5.5.8-4 4 1 5.5L8 13l-5 2.5 1-5.5-4-4 5.5-.8L8 .2z"/></svg>

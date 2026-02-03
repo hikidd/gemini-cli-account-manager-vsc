@@ -3,6 +3,7 @@
 
     const loginBtn = document.getElementById('loginBtn');
     const langToggle = document.getElementById('langToggle');
+    const refreshAllBtn = document.getElementById('refreshAllBtn');
     const accountList = document.getElementById('accountList');
 
     // I18n Resources
@@ -13,13 +14,18 @@
             'switch': 'Switch',
             'remove': 'Remove',
             'refresh': 'Refresh',
+            'refreshAll': 'Refresh All',
             'active': 'Active',
             'lastRefreshed': 'Last refresh',
             'noAccounts': 'No accounts found. Please login.',
             'confirmRemove': 'Are you sure you want to remove this account?',
             'unknown': 'Unknown',
             'loginSuccess': 'Successfully logged in',
-            'switched': 'Switched to'
+            'switched': 'Switched to',
+            'model': 'Model',
+            'yoloMode': 'YOLO Mode',
+            'restart': 'Restart',
+            'feedback': 'Feedback'
         },
         'zh': {
             'title': 'Gemini CLI Account Manager',
@@ -27,13 +33,18 @@
             'switch': '切换',
             'remove': '移除',
             'refresh': '刷新',
+            'refreshAll': '刷新全部',
             'active': '当前使用',
             'lastRefreshed': '上次刷新',
             'noAccounts': '暂无账号，请点击添加。',
             'confirmRemove': '确定要移除该账号吗？',
             'unknown': '未知',
             'loginSuccess': '登录成功',
-            'switched': '已切换至'
+            'switched': '已切换至',
+            'model': '模型',
+            'yoloMode': 'YOLO 模式',
+            'restart': '重启',
+            'feedback': 'QQ群:1082749762'
         }
     };
 
@@ -43,6 +54,15 @@
     loginBtn.addEventListener('click', () => {
         vscode.postMessage({ type: 'loginWithGoogle' });
     });
+
+    if (refreshAllBtn) {
+        refreshAllBtn.addEventListener('click', () => {
+             // Visual feedback
+             refreshAllBtn.style.opacity = '0.5';
+             setTimeout(() => { refreshAllBtn.style.opacity = '1'; }, 1000);
+             vscode.postMessage({ type: 'refreshAll' });
+        });
+    }
 
     langToggle.addEventListener('click', () => {
         const newLang = currentLang === 'zh' ? 'en' : 'zh';
@@ -88,6 +108,26 @@
         });
     }
 
+    const modelSelector = document.getElementById('modelSelector');
+    if (modelSelector) {
+        modelSelector.addEventListener('change', () => {
+            vscode.postMessage({
+                type: 'updateSettings',
+                payload: { model: { name: modelSelector.value } }
+            });
+        });
+    }
+
+    const autoAcceptToggle = document.getElementById('autoAcceptToggle');
+    if (autoAcceptToggle) {
+        autoAcceptToggle.addEventListener('change', () => {
+            vscode.postMessage({
+                type: 'updateSettings',
+                payload: { tools: { autoAccept: autoAcceptToggle.checked } }
+            });
+        });
+    }
+
     window.addEventListener('message', event => {
         const message = event.data;
         switch (message.type) {
@@ -96,6 +136,17 @@
                     currentLang = message.payload.language;
                     updateStaticText();
                 }
+                
+                if (message.payload.settings) {
+                    const settings = message.payload.settings;
+                    if (settings.model && settings.model.name && document.getElementById('modelSelector')) {
+                        document.getElementById('modelSelector').value = settings.model.name;
+                    }
+                    if (settings.tools && document.getElementById('autoAcceptToggle')) {
+                         document.getElementById('autoAcceptToggle').checked = !!settings.tools.autoAccept;
+                    }
+                }
+
                 renderAccounts(message.payload.accounts);
                 break;
             case 'error':
@@ -118,7 +169,7 @@
         });
 
         // Update button title if needed
-        langToggle.textContent = currentLang === 'zh' ? '中' : 'EN';
+        langToggle.querySelector('span').textContent = currentLang === 'zh' ? '中' : 'EN';
     }
 
     function renderAccounts(accounts) {

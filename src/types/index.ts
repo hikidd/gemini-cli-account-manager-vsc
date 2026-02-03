@@ -35,7 +35,9 @@ export type MessageType =
   | 'refreshQuota'
   | 'openFile'
   | 'restart'
-  | 'openUrl';
+  | 'openUrl'
+  | 'updateSettings'
+  | 'refreshAll';
 
 export interface Message {
   type: MessageType;

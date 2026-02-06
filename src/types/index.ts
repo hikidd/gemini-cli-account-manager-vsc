@@ -37,7 +37,10 @@ export type MessageType =
   | 'restart'
   | 'openUrl'
   | 'updateSettings'
-  | 'refreshAll';
+  | 'refreshAll'
+  | 'startProxy'
+  | 'stopProxy'
+  | 'proxyStatus';
 
 export interface Message {
   type: MessageType;

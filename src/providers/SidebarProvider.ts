@@ -6,6 +6,7 @@ import { GoogleAuthService } from '../services/GoogleAuthService';
 import { GeminiCliService } from '../services/GeminiCliService';
 import { TerminalManager } from '../managers/TerminalManager';
 import { GeminiQuotaService } from '../services/GeminiQuotaService';
+import { ProxyService } from '../services/ProxyService';
 import { Message } from '../types';
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
@@ -16,16 +17,23 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
   private cliService: GeminiCliService;
   private terminalManager: TerminalManager;
   private quotaService: GeminiQuotaService;
+  private proxyService: ProxyService;
   private refreshTimer?: NodeJS.Timeout;
 
-  constructor(context: vscode.ExtensionContext, accountManager: AccountManager) {
+  constructor(context: vscode.ExtensionContext, accountManager: AccountManager, proxyService: ProxyService) {
     this.context = context;
     this.accountManager = accountManager;
+    this.proxyService = proxyService;
     this.authService = new GoogleAuthService();
     this.cliService = new GeminiCliService();
     this.terminalManager = new TerminalManager();
     this.quotaService = new GeminiQuotaService();
     
+    // Subscribe to Proxy Status Changes
+    this.proxyService.onStatusChange(status => {
+      this.sendProxyStatus(status);
+    });
+
     // Start auto-refresh timer (every 15 minutes)
     this.startAutoRefresh();
   }
@@ -42,6 +50,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     if (this.refreshTimer) {
       clearInterval(this.refreshTimer);
     }
+    this.proxyService.stop(); // Ensure proxy stops when extension deactivates
   }
 
   private async refreshAllAccounts() {
@@ -135,6 +144,22 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           break;
         case 'refreshAll':
           await this.handleRefreshAll();
+          break;
+        case 'startProxy':
+          this.proxyService.start(message.payload.port, message.payload.key);
+          await this.terminalManager.startProxyTerminal(
+            message.payload.port, 
+            message.payload.key, 
+            this.accountManager.getLanguage(),
+            this.getTerminalOptions()
+          );
+          break;
+        case 'stopProxy':
+          this.proxyService.stop();
+          await this.terminalManager.stopProxyTerminal(
+            this.accountManager.getActiveAccount(),
+            this.accountManager.getLanguage()
+          );
           break;
       }
     } catch (error: any) {
@@ -397,9 +422,22 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     const accounts = this.accountManager.getAccounts();
     const language = this.accountManager.getLanguage();
     const settings = this.accountManager.getSettings();
+    
+    // Send Main State
     this.view.webview.postMessage({
       type: 'updateState',
       payload: { accounts, language, settings }
+    });
+
+    // Send Proxy State
+    this.sendProxyStatus(this.proxyService.getStatus());
+  }
+
+  private sendProxyStatus(status: { running: boolean; port: number; activeAccounts: number }) {
+    if (!this.view) return;
+    this.view.webview.postMessage({
+      type: 'proxyStatus',
+      payload: status
     });
   }
 

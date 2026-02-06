@@ -21,6 +21,7 @@ export class GoogleAuthService {
   public async startLogin(): Promise<GeminiAccount> {
     const code = await this.startLocalServer();
     const tokens = await this.exchangeCodeForToken(code);
+    console.log('[Auth] Received Tokens. Scope:', tokens.scope); // Added Log
     const userInfo = await this.getUserInfo(tokens.access_token);
 
     return {
@@ -52,10 +53,10 @@ export class GoogleAuthService {
       const server = http.createServer(async (req, res) => {
         try {
           const parsedUrl = url.parse(req.url!, true);
-          
+
           if (parsedUrl.pathname === '/oauth2callback') {
             const code = parsedUrl.query.code as string;
-            
+
             if (code) {
               res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
               res.end('<h1>登录成功!</h1><p>您可以关闭此窗口并返回 VS Code。</p><script>window.close()</script>', () => {
@@ -109,7 +110,7 @@ export class GoogleAuthService {
           reject(err);
         }
         // Attempt cleanup if possible, though server might not be listening
-        cleanup(); 
+        cleanup();
       });
 
       // Timeout after 2 minutes to prevent hanging server if user abandons login

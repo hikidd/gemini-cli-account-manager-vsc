@@ -24,6 +24,43 @@
         </div>
     </div>
 
+    <!-- Proxy Server Panel -->
+    <div class="proxy-panel">
+        <div class="proxy-header">
+            <div class="section-title">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="margin-right:6px"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zM1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0zm5-4.5v9l6-4.5-6-4.5z"/></svg>
+                <span data-i18n="proxyServer">Local Proxy Server</span>
+            </div>
+            <div class="status-indicator" id="proxyStatusIndicator">
+                <span class="status-dot"></span>
+                <span id="proxyStatusText">Stopped</span>
+            </div>
+        </div>
+        
+        <div class="proxy-controls">
+            <div class="input-group">
+                <label for="proxyPort">Port</label>
+                <input type="number" id="proxyPort" value="8000" min="1024" max="65535" class="input-tiny">
+            </div>
+            <div class="input-group" style="flex:1;">
+                <label for="proxyKey">API Key</label>
+                <input type="text" id="proxyKey" placeholder="Set a key..." value="gemini-proxy" class="input-small">
+            </div>
+            <button id="btnToggleProxy" class="btn btn-blue" style="height: 28px;">Start</button>
+        </div>
+
+        <div id="proxyEnvInfo" class="proxy-env-info" style="display:none;">
+            <div class="env-row">
+                <code>export GEMINI_API_ENDPOINT="http://127.0.0.1:<span id="displayPort">8000</span>"</code>
+                <button class="btn-icon-copy" data-target="endpoint">📋</button>
+            </div>
+            <div class="env-row">
+                <code>export GEMINI_API_KEY="<span id="displayKey">***</span>"</code>
+                <button class="btn-icon-copy" data-target="key">📋</button>
+            </div>
+        </div>
+    </div>
+
     <div id="accountList" class="account-list">
         <!-- Accounts will be injected here -->
     </div>

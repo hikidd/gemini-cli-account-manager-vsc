@@ -44,11 +44,74 @@
             'model': '模型',
             'yoloMode': 'YOLO 模式',
             'restart': '重启',
-            'feedback': 'QQ群:1082749762'
+            'feedback': 'QQ群:1082749762',
+            'proxyServer': '本地代理服务',
+            'start': '启动',
+            'stop': '停止',
+            'running': '运行中',
+            'stopped': '已停止',
+            'copied': '已复制'
         }
     };
 
     let currentLang = 'zh'; // Default
+    let isProxyRunning = false;
+
+    // Proxy Elements
+    const btnToggleProxy = document.getElementById('btnToggleProxy');
+    const proxyPortInput = document.getElementById('proxyPort');
+    const proxyKeyInput = document.getElementById('proxyKey');
+    const proxyStatusText = document.getElementById('proxyStatusText');
+    const proxyStatusDot = document.querySelector('.status-dot');
+    const proxyEnvInfo = document.getElementById('proxyEnvInfo');
+    const displayPort = document.getElementById('displayPort');
+    const displayKey = document.getElementById('displayKey');
+
+    // Proxy Event Listeners
+    if (btnToggleProxy) {
+        btnToggleProxy.addEventListener('click', () => {
+            if (isProxyRunning) {
+                // Stop
+                btnToggleProxy.disabled = true;
+                btnToggleProxy.textContent = '...';
+                vscode.postMessage({ type: 'stopProxy' });
+            } else {
+                // Start
+                const port = parseInt(proxyPortInput.value, 10) || 8000;
+                const key = proxyKeyInput.value || 'gemini-proxy';
+                
+                btnToggleProxy.disabled = true;
+                btnToggleProxy.textContent = '...';
+                
+                vscode.postMessage({ 
+                    type: 'startProxy', 
+                    payload: { port, key } 
+                });
+            }
+        });
+    }
+
+    // Copy Buttons
+    document.querySelectorAll('.btn-icon-copy').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const target = btn.getAttribute('data-target');
+            let textToCopy = '';
+            
+            if (target === 'endpoint') {
+                textToCopy = `export GEMINI_API_ENDPOINT="http://127.0.0.1:${displayPort.textContent}"`;
+            } else if (target === 'key') {
+                textToCopy = `export GEMINI_API_KEY="${displayKey.textContent}"`;
+            }
+
+            if (textToCopy) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    const originalText = btn.textContent;
+                    btn.textContent = '✓';
+                    setTimeout(() => btn.textContent = originalText, 1500);
+                });
+            }
+        });
+    });
 
     // Event Listeners
     loginBtn.addEventListener('click', () => {
@@ -148,6 +211,40 @@
                 }
 
                 renderAccounts(message.payload.accounts);
+                break;
+            case 'proxyStatus':
+                const status = message.payload;
+                isProxyRunning = status.running;
+                
+                // Update UI
+                if (isProxyRunning) {
+                    btnToggleProxy.textContent = t('stop');
+                    btnToggleProxy.classList.remove('btn-blue');
+                    btnToggleProxy.classList.add('btn-secondary'); // Make it look like "Cancel/Stop"
+                    proxyStatusDot.classList.add('running');
+                    proxyStatusText.textContent = t('running');
+                    
+                    proxyPortInput.disabled = true;
+                    proxyKeyInput.disabled = true;
+                    proxyEnvInfo.style.display = 'flex';
+                    
+                    displayPort.textContent = status.port;
+                    // Note: We display the key from input or payload. 
+                    // To be safe, let's assume payload echoes it back or we rely on input value if not provided.
+                    displayKey.textContent = status.key || proxyKeyInput.value; 
+                } else {
+                    btnToggleProxy.textContent = t('start');
+                    btnToggleProxy.classList.add('btn-blue');
+                    btnToggleProxy.classList.remove('btn-secondary');
+                    proxyStatusDot.classList.remove('running');
+                    proxyStatusText.textContent = t('stopped');
+                    
+                    proxyPortInput.disabled = false;
+                    proxyKeyInput.disabled = false;
+                    proxyEnvInfo.style.display = 'none';
+                }
+                
+                btnToggleProxy.disabled = false;
                 break;
             case 'error':
                 console.error(message.payload.message);

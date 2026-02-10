@@ -6,6 +6,19 @@ body {
     background-color: var(--vscode-sideBar-background);
 }
 
+.tab-item.active {
+    border-bottom-color: var(--vscode-progressBar-background) !important;
+    color: var(--vscode-foreground) !important;
+}
+
+.tab-item {
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.tab-item:hover {
+    color: var(--vscode-foreground);
+}
+
 .header {
     display: flex;
     justify-content: space-between;

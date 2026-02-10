@@ -37,7 +37,10 @@ export type MessageType =
   | 'restart'
   | 'openUrl'
   | 'updateSettings'
-  | 'refreshAll';
+  | 'refreshAll'
+  | 'listSessions'
+  | 'loadSession'
+  | 'deleteSession';
 
 export interface Message {
   type: MessageType;
@@ -47,4 +50,13 @@ export interface Message {
 export interface ExtensionState {
   accounts: GeminiAccount[];
   language: 'zh' | 'en';
+}
+
+export interface SessionMetadata {
+    id: string;
+    filename: string;
+    startTime: string;
+    lastUpdated: string;
+    preview: string;
+    messageCount: number;
 }

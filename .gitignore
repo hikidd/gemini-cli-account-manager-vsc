@@ -8,3 +8,5 @@ dist/
 .kiro/
 .vscode/
 .gemini-clipboard/
+*.vsix
+

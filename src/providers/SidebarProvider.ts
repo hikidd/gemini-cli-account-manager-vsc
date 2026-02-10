@@ -6,6 +6,7 @@ import { GoogleAuthService } from '../services/GoogleAuthService';
 import { GeminiCliService } from '../services/GeminiCliService';
 import { TerminalManager } from '../managers/TerminalManager';
 import { GeminiQuotaService } from '../services/GeminiQuotaService';
+import { SessionManager } from '../managers/SessionManager';
 import { Message } from '../types';
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
@@ -16,6 +17,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
   private cliService: GeminiCliService;
   private terminalManager: TerminalManager;
   private quotaService: GeminiQuotaService;
+  private sessionManager: SessionManager;
   private refreshTimer?: NodeJS.Timeout;
 
   constructor(context: vscode.ExtensionContext, accountManager: AccountManager) {
@@ -25,6 +27,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     this.cliService = new GeminiCliService();
     this.terminalManager = new TerminalManager();
     this.quotaService = new GeminiQuotaService();
+    this.sessionManager = SessionManager.getInstance();
     
     // Start auto-refresh timer (every 15 minutes)
     this.startAutoRefresh();
@@ -135,6 +138,15 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           break;
         case 'refreshAll':
           await this.handleRefreshAll();
+          break;
+        case 'listSessions':
+          await this.handleListSessions();
+          break;
+        case 'loadSession':
+          await this.handleLoadSession(message.payload.filename);
+          break;
+        case 'deleteSession':
+          await this.handleDeleteSession(message.payload.filename);
           break;
       }
     } catch (error: any) {
@@ -392,14 +404,97 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     await this.sendState();
   }
 
+  private async handleListSessions() {
+    const sessions = await this.sessionManager.listSessions();
+    if (this.view) {
+        this.view.webview.postMessage({
+            type: 'updateSessions',
+            payload: { sessions }
+        });
+    }
+  }
+
+  private async handleLoadSession(filename: string) {
+    const session = await this.sessionManager.getSession(filename);
+    if (!session) {
+        vscode.window.showErrorMessage('Failed to load session');
+        return;
+    }
+
+    const lang = this.accountManager.getLanguage();
+    const message = lang === 'zh'
+      ? "加载历史会话将覆盖当前终端内容。确定继续吗？"
+      : "Loading a history session will overwrite the current terminal content. Continue?";
+    const confirmBtn = lang === 'zh' ? "确定" : "Continue";
+
+    const selection = await vscode.window.showWarningMessage(message, { modal: true }, confirmBtn);
+    if (selection !== confirmBtn) {
+        return;
+    }
+
+    // Reuse terminal manager to send commands
+    // We can't easily "restore" the state into the CLI process itself unless the CLI supports importing sessions.
+    // However, the user request is about "managing" sessions. 
+    // If the goal is just to VIEW the session, we can show it in a webview or output channel.
+    // If the goal is to RESUME, we might need to send the history to the CLI.
+    // Based on the gemini-cli features, it supports resume via flags or /resume command.
+    // But since we are already running the terminal, maybe we can use /chat load <file>?
+    // Or restart the terminal with --resume <id>.
+    
+    // Let's try to restart the terminal with the session ID if possible, 
+    // or just show the content in a new editor for now as a safe step.
+    
+    // Re-reading requirements: "gemini cli itself unless manual /chat save... manage sessions... nice feature"
+    // The user wants to manage sessions.
+    
+    // Strategy:
+    // 1. Show the session content in a read-only editor.
+    // 2. Offer to "Resume" which would restart the terminal with `gemini --resume <session_id>` or sending `/chat resume <id>` if supported.
+    // Looking at CLI docs/help found online: `gemini --resume <uuid>` is supported.
+    
+    const activeAccount = this.accountManager.getActiveAccount();
+    if (activeAccount) {
+        // Restart terminal with --resume flag
+        // We need to update TerminalManager to support passing extra args or handle this specific case.
+        // For now, let's open the JSON file so the user can see it, and maybe copy the ID.
+        // BETTER: Use TerminalManager to send `/chat load <id>` if that works, or restart with flag.
+        // Since we don't want to change TerminalManager too much blindly, let's try to restart with the resume flag.
+        
+        // Actually, the simplest way to "resume" a specific session ID is likely passing it during startup.
+        // Let's modify the terminal options to include resumeSessionId.
+        
+        await this.terminalManager.refreshTerminal(activeAccount, lang, {
+            ...this.getTerminalOptions(),
+            resumeSessionId: session.sessionId
+        });
+        
+        vscode.window.showInformationMessage(lang === 'zh' ? '会话已加载' : 'Session loaded');
+    }
+  }
+
+  private async handleDeleteSession(filename: string) {
+    const lang = this.accountManager.getLanguage();
+    const confirm = await vscode.window.showWarningMessage(
+        lang === 'zh' ? '确定删除此会话？' : 'Delete this session?',
+        { modal: true },
+        lang === 'zh' ? '删除' : 'Delete'
+    );
+    
+    if (confirm) {
+        await this.sessionManager.deleteSession(filename);
+        await this.handleListSessions(); // Refresh list
+    }
+  }
+
   private async sendState() {
     if (!this.view) return;
     const accounts = this.accountManager.getAccounts();
     const language = this.accountManager.getLanguage();
     const settings = this.accountManager.getSettings();
+    const sessions = await this.sessionManager.listSessions();
     this.view.webview.postMessage({
       type: 'updateState',
-      payload: { accounts, language, settings }
+      payload: { accounts, language, settings, sessions }
     });
   }
 

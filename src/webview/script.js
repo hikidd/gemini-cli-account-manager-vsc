@@ -5,6 +5,11 @@
     const langToggle = document.getElementById('langToggle');
     const refreshAllBtn = document.getElementById('refreshAllBtn');
     const accountList = document.getElementById('accountList');
+    const sessionList = document.getElementById('sessionList');
+    const tabAccounts = document.getElementById('tabAccounts');
+    const tabSessions = document.getElementById('tabSessions');
+    const viewAccounts = document.getElementById('viewAccounts');
+    const viewSessions = document.getElementById('viewSessions');
 
     // I18n Resources
     const translations = {
@@ -18,6 +23,7 @@
             'active': 'Active',
             'lastRefreshed': 'Last refresh',
             'noAccounts': 'No accounts found. Please login.',
+            'noSessions': 'No sessions found.',
             'confirmRemove': 'Are you sure you want to remove this account?',
             'unknown': 'Unknown',
             'loginSuccess': 'Successfully logged in',
@@ -25,7 +31,13 @@
             'model': 'Model',
             'yoloMode': 'YOLO Mode',
             'restart': 'Restart',
-            'feedback': 'Feedback'
+            'feedback': 'Feedback',
+            'tabAccounts': 'Accounts',
+            'tabSessions': 'Sessions',
+            'loadSession': 'Load',
+            'deleteSession': 'Delete',
+            'sessionPreview': 'Preview',
+            'messages': 'messages'
         },
         'zh': {
             'title': 'Gemini CLI Account Manager',
@@ -37,6 +49,7 @@
             'active': '当前使用',
             'lastRefreshed': '上次刷新',
             'noAccounts': '暂无账号，请点击添加。',
+            'noSessions': '暂无会话。',
             'confirmRemove': '确定要移除该账号吗？',
             'unknown': '未知',
             'loginSuccess': '登录成功',
@@ -44,11 +57,44 @@
             'model': '模型',
             'yoloMode': 'YOLO 模式',
             'restart': '重启',
-            'feedback': 'QQ群:1082749762'
+            'feedback': 'QQ群:1082749762',
+            'tabAccounts': '账号列表',
+            'tabSessions': '历史会话',
+            'loadSession': '加载',
+            'deleteSession': '删除',
+            'sessionPreview': '预览',
+            'messages': '条消息'
         }
     };
 
     let currentLang = 'zh'; // Default
+
+    // Tab Switching
+    function switchTab(tab) {
+        if (tab === 'accounts') {
+            tabAccounts.classList.add('active');
+            tabSessions.classList.remove('active');
+            viewAccounts.style.display = 'block';
+            viewSessions.style.display = 'none';
+            // Also update header buttons visibility if needed
+            if(refreshAllBtn) refreshAllBtn.style.display = 'inline-flex';
+            if(loginBtn) loginBtn.style.display = 'inline-flex';
+        } else {
+            tabSessions.classList.add('active');
+            tabAccounts.classList.remove('active');
+            viewSessions.style.display = 'block';
+            viewAccounts.style.display = 'none';
+            // Hide account-specific buttons
+            if(refreshAllBtn) refreshAllBtn.style.display = 'none';
+            if(loginBtn) loginBtn.style.display = 'none';
+            
+            // Trigger load sessions
+            vscode.postMessage({ type: 'listSessions' });
+        }
+    }
+
+    tabAccounts.addEventListener('click', () => switchTab('accounts'));
+    tabSessions.addEventListener('click', () => switchTab('sessions'));
 
     // Event Listeners
     loginBtn.addEventListener('click', () => {
@@ -131,6 +177,9 @@
     window.addEventListener('message', event => {
         const message = event.data;
         switch (message.type) {
+            case 'updateSessions':
+                renderSessions(message.payload.sessions);
+                break;
             case 'updateState':
                 if (message.payload.language) {
                     currentLang = message.payload.language;
@@ -147,7 +196,12 @@
                     }
                 }
 
-                renderAccounts(message.payload.accounts);
+                if (message.payload.accounts) {
+                    renderAccounts(message.payload.accounts);
+                }
+                if (message.payload.sessions) {
+                    renderSessions(message.payload.sessions);
+                }
                 break;
             case 'error':
                 console.error(message.payload.message);
@@ -371,6 +425,63 @@
             } catch (err) {
                 console.error('Error rendering account card:', err);
                 accountList.innerHTML += `<div style="color:red; padding:10px;">Error rendering account: ${err.message}</div>`;
+            }
+        });
+    }
+
+    function renderSessions(sessions) {
+        sessionList.innerHTML = '';
+
+        if (!sessions || sessions.length === 0) {
+            sessionList.innerHTML = `<div style="text-align:center; color: var(--vscode-descriptionForeground); padding: 20px;">${t('noSessions')}</div>`;
+            return;
+        }
+
+        sessions.forEach(session => {
+            const card = document.createElement('div');
+            card.className = 'account-card'; // Reuse card style
+            
+            const lastUpdated = new Date(session.lastUpdated).toLocaleString(currentLang === 'zh' ? 'zh-CN' : 'en-US');
+            const previewText = session.preview || t('sessionPreview');
+
+            card.innerHTML = `
+                <div class="card-header" style="margin-bottom: 8px; flex-direction: column; align-items: flex-start;">
+                    <div class="session-title" style="font-size: 13px; font-weight: 600; color: var(--vscode-foreground); margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; width: 100%;" title="${previewText}">
+                        ${previewText}
+                    </div>
+                    <div style="font-size: 11px; color: var(--vscode-descriptionForeground);">
+                        ${lastUpdated} · ${session.messageCount} ${t('messages')}
+                    </div>
+                </div>
+                <div class="footer">
+                    <div class="actions" style="width: 100%; display: flex; justify-content: flex-end; gap: 8px;">
+                        <button class="btn btn-sm action-load-session" data-filename="${session.filename}">${t('loadSession')}</button>
+                        <button class="btn btn-secondary btn-sm action-delete-session" data-filename="${session.filename}">${t('deleteSession')}</button>
+                    </div>
+                </div>
+            `;
+
+            sessionList.appendChild(card);
+
+            const loadBtn = card.querySelector('.action-load-session');
+            const deleteBtn = card.querySelector('.action-delete-session');
+
+            if (loadBtn) {
+                loadBtn.addEventListener('click', () => {
+                    vscode.postMessage({
+                        type: 'loadSession',
+                        payload: { filename: session.filename }
+                    });
+                });
+            }
+
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', () => {
+                    vscode.postMessage({
+                        type: 'deleteSession',
+                        payload: { filename: session.filename }
+                    });
+                });
             }
         });
     }

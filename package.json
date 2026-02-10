@@ -2,7 +2,7 @@
   "name": "gemini-cli-account-manager",
   "displayName": "Gemini CLI Account Manager",
   "description": "Manage multiple Google accounts for Gemini CLI.",
-  "version": "1.2.1",
+  "version": "1.2.3",
   "publisher": "hi-kidd",
   "icon": "logo.png",
   "engines": {

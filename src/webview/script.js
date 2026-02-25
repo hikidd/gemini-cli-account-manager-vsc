@@ -216,6 +216,15 @@
         return translations[currentLang][key] || key;
     }
 
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     function updateStaticText() {
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
@@ -439,24 +448,28 @@
 
         sessions.forEach(session => {
             const card = document.createElement('div');
-            card.className = 'account-card'; // Reuse card style
-            
+            card.className = 'account-card session-card';
+
             const lastUpdated = new Date(session.lastUpdated).toLocaleString(currentLang === 'zh' ? 'zh-CN' : 'en-US');
             const previewText = session.preview || t('sessionPreview');
+            const safeFilename = escapeHtml(session.filename || '');
+            const safeLastUpdated = escapeHtml(lastUpdated);
+            const safePreviewText = escapeHtml(previewText);
+            const safeMessageCount = Number.isFinite(Number(session.messageCount)) ? Number(session.messageCount) : 0;
 
             card.innerHTML = `
-                <div class="card-header" style="margin-bottom: 8px; flex-direction: column; align-items: flex-start;">
-                    <div class="session-title" style="font-size: 13px; font-weight: 600; color: var(--vscode-foreground); margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; width: 100%;" title="${previewText}">
-                        ${previewText}
+                <div class="card-header session-card-header">
+                    <div class="session-meta-row">
+                        <div class="session-meta" title="${safeLastUpdated}">
+                            ${safeLastUpdated} · ${safeMessageCount} ${t('messages')}
+                        </div>
+                        <div class="actions session-actions">
+                            <button class="btn btn-sm action-load-session" data-filename="${safeFilename}">${t('loadSession')}</button>
+                            <button class="btn btn-secondary btn-sm action-delete-session" data-filename="${safeFilename}">${t('deleteSession')}</button>
+                        </div>
                     </div>
-                    <div style="font-size: 11px; color: var(--vscode-descriptionForeground);">
-                        ${lastUpdated} · ${session.messageCount} ${t('messages')}
-                    </div>
-                </div>
-                <div class="footer">
-                    <div class="actions" style="width: 100%; display: flex; justify-content: flex-end; gap: 8px;">
-                        <button class="btn btn-sm action-load-session" data-filename="${session.filename}">${t('loadSession')}</button>
-                        <button class="btn btn-secondary btn-sm action-delete-session" data-filename="${session.filename}">${t('deleteSession')}</button>
+                    <div class="session-title" title="${safePreviewText}">
+                        ${safePreviewText}
                     </div>
                 </div>
             `;

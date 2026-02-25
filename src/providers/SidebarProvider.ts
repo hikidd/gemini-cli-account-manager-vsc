@@ -236,7 +236,26 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
   }
 
   private async handleOpenUrl(url: string) {
-      vscode.env.openExternal(vscode.Uri.parse(url));
+      const safeUrl = typeof url === 'string' ? url.trim() : '';
+      if (!safeUrl) {
+          vscode.window.showErrorMessage('Invalid URL');
+          return;
+      }
+
+      let parsed: URL;
+      try {
+          parsed = new URL(safeUrl);
+      } catch {
+          vscode.window.showErrorMessage(`Invalid URL: ${safeUrl}`);
+          return;
+      }
+
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+          vscode.window.showErrorMessage(`Unsupported URL scheme: ${parsed.protocol}`);
+          return;
+      }
+
+      await vscode.env.openExternal(vscode.Uri.parse(parsed.toString()));
   }
 
   private async handleRefreshQuota(id: string) {

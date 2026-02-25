@@ -230,6 +230,60 @@ body {
     height: 24px;
 }
 
+.session-card {
+    padding: 10px 12px;
+}
+
+.session-card-header {
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+}
+
+.session-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.session-meta {
+    font-size: 11px;
+    color: var(--vscode-descriptionForeground);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex: 1;
+}
+
+.session-actions {
+    width: auto;
+    justify-content: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.session-actions .btn-sm {
+    height: 22px;
+    padding: 2px 8px;
+}
+
+.session-card .session-title {
+    font-size: 12px;
+    line-height: 1.35;
+    font-weight: 600;
+    color: var(--vscode-foreground);
+    margin-bottom: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    width: 100%;
+}
+
 /* --- Bottom Control Panel Styles --- */
 
 .bottom-panel {

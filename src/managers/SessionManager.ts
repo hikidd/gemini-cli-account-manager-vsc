@@ -59,27 +59,29 @@ export class SessionManager {
         }
 
         const projectPath = workspaceFolders[0].uri.fsPath;
-        // Calculate hash for both original and lowercased path to handle case-sensitivity issues
-        const hashOriginal = this.calculateProjectHash(projectPath);
-        const hashLower = this.calculateProjectHash(projectPath.toLowerCase());
-
         const baseTmp = path.join(os.homedir(), '.gemini', 'tmp');
-        const dirOriginal = path.join(baseTmp, hashOriginal, 'chats');
-        const dirLower = path.join(baseTmp, hashLower, 'chats');
 
-        // Prefer the one that exists
-        if (fs.existsSync(dirOriginal)) {
-            this.projectHash = hashOriginal;
-            this.sessionDir = dirOriginal;
-        } else if (fs.existsSync(dirLower)) {
-            this.projectHash = hashLower;
-            this.sessionDir = dirLower;
-            console.log(`[SessionManager] Using lowercased path hash. Original: ${hashOriginal}, Lower: ${hashLower}`);
-        } else {
-            // Default to original if neither exists (will be created or handled later)
-            this.projectHash = hashOriginal;
-            this.sessionDir = dirOriginal;
-        }
+        const normalizedPath = path.normalize(projectPath);
+        const lowerPath = normalizedPath.toLowerCase();
+        const slashPath = normalizedPath.replace(/\\/g, '/');
+        const lowerSlashPath = slashPath.toLowerCase();
+
+        const candidateHashes = [
+            this.calculateProjectHash(projectPath),
+            this.calculateProjectHash(normalizedPath),
+            this.calculateProjectHash(lowerPath),
+            this.calculateProjectHash(slashPath),
+            this.calculateProjectHash(lowerSlashPath)
+        ].filter((hash, index, arr) => arr.indexOf(hash) === index);
+
+        const existingHash = candidateHashes.find(hash => {
+            const chatsDir = path.join(baseTmp, hash, 'chats');
+            return fs.existsSync(chatsDir);
+        });
+
+        const selectedHash = existingHash || candidateHashes[0];
+        this.projectHash = selectedHash || '';
+        this.sessionDir = selectedHash ? path.join(baseTmp, selectedHash, 'chats') : '';
         
         console.log(`[SessionManager] Initialized. Project Path: ${projectPath}`);
         console.log(`[SessionManager] Selected Hash: ${this.projectHash}`);
@@ -88,6 +90,26 @@ export class SessionManager {
 
     private calculateProjectHash(projectPath: string): string {
         return crypto.createHash('sha256').update(projectPath).digest('hex');
+    }
+
+    private isSafeSessionFilename(filename: string): boolean {
+        return /^session-[a-zA-Z0-9_-]+\.json$/.test(filename);
+    }
+
+    private resolveSafeSessionFilePath(filename: string): string | null {
+        if (!this.sessionDir || !this.isSafeSessionFilename(filename)) {
+            return null;
+        }
+
+        const baseDir = path.resolve(this.sessionDir);
+        const targetPath = path.resolve(baseDir, filename);
+        const baseWithSeparator = baseDir.endsWith(path.sep) ? baseDir : `${baseDir}${path.sep}`;
+
+        if (!targetPath.startsWith(baseWithSeparator)) {
+            return null;
+        }
+
+        return targetPath;
     }
 
     public getSessionDir(): string {
@@ -110,33 +132,24 @@ export class SessionManager {
             const msg = `Session directory not found: ${this.sessionDir}`;
             console.warn(`[SessionManager] ${msg}`);
             
-            // Try to provide diagnostic info
-            try {
-                const parent = path.dirname(path.dirname(this.sessionDir)); // .gemini/tmp
-                if (fs.existsSync(parent)) {
-                    const dirs = await fs.promises.readdir(parent);
-                    console.log(`[SessionManager] Available project hashes in ${parent}:`, dirs);
-                    vscode.window.showErrorMessage(`Session Dir Not Found!\nLooking in: ${this.sessionDir}\n\nAvailable Hashes: ${dirs.slice(0, 5).join(', ')}...`);
-                } else {
-                    vscode.window.showErrorMessage(`Temp dir not found: ${parent}`);
-                }
-            } catch (e) { 
-                vscode.window.showErrorMessage(`Error checking session dir: ${msg}`);
-            }
             return [];
         }
 
         try {
             console.log(`[SessionManager] Reading sessions from: ${this.sessionDir}`);
             const files = await fs.promises.readdir(this.sessionDir);
-            const sessionFiles = files.filter(file => file.startsWith('session-') && file.endsWith('.json'));
+            const sessionFiles = files.filter(file => this.isSafeSessionFilename(file));
             console.log(`[SessionManager] Found ${sessionFiles.length} session files.`);
 
             const sessions: SessionMetadata[] = [];
 
             for (const file of sessionFiles) {
                 try {
-                    const filePath = path.join(this.sessionDir, file);
+                    const filePath = this.resolveSafeSessionFilePath(file);
+                    if (!filePath) {
+                        continue;
+                    }
+
                     const content = await fs.promises.readFile(filePath, 'utf-8');
                     const data = JSON.parse(content);
 
@@ -169,10 +182,9 @@ export class SessionManager {
     }
 
     public async getSession(filename: string): Promise<SessionDetail | null> {
-        if (!this.sessionDir) {return null;}
-        const filePath = path.join(this.sessionDir, filename);
+        const filePath = this.resolveSafeSessionFilePath(filename);
 
-        if (!fs.existsSync(filePath)) {
+        if (!filePath || !fs.existsSync(filePath)) {
             return null;
         }
 
@@ -186,10 +198,9 @@ export class SessionManager {
     }
 
     public async deleteSession(filename: string): Promise<boolean> {
-        if (!this.sessionDir) {return false;}
-        const filePath = path.join(this.sessionDir, filename);
+        const filePath = this.resolveSafeSessionFilePath(filename);
 
-        if (!fs.existsSync(filePath)) {
+        if (!filePath || !fs.existsSync(filePath)) {
             return false;
         }
 

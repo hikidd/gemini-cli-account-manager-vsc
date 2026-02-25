@@ -4,14 +4,21 @@ import * as os from 'os';
 import { GeminiAccount } from '../types';
 
 export class GeminiCliService {
-  private readonly GEMINI_DIR = path.join(os.homedir(), '.gemini');
-  private readonly GOOGLE_ACCOUNTS_FILE = path.join(this.GEMINI_DIR, 'google_accounts.json');
-  private readonly OAUTH_CREDS_FILE = path.join(this.GEMINI_DIR, 'oauth_creds.json');
+  private readonly GEMINI_DIR: string;
+  private readonly GOOGLE_ACCOUNTS_FILE: string;
+  private readonly OAUTH_CREDS_FILE: string;
+  private readonly SETTINGS_FILE: string;
 
-  private readonly SETTINGS_FILE = path.join(this.GEMINI_DIR, 'settings.json');
+  constructor(geminiDir?: string) {
+    this.GEMINI_DIR = geminiDir ?? path.join(os.homedir(), '.gemini');
+    this.GOOGLE_ACCOUNTS_FILE = path.join(this.GEMINI_DIR, 'google_accounts.json');
+    this.OAUTH_CREDS_FILE = path.join(this.GEMINI_DIR, 'oauth_creds.json');
+    this.SETTINGS_FILE = path.join(this.GEMINI_DIR, 'settings.json');
 
-  constructor() {
     this.ensureGeminiDir();
+
+    // Best-effort startup repair for legacy/mismatched history session paths.
+    this.tryRepairHistorySessionDirs('on startup');
   }
 
   private ensureGeminiDir() {
@@ -44,6 +51,129 @@ export class GeminiCliService {
         console.error('Failed to restore settings.json', e);
       }
     }
+
+    // 4. Best-effort history/session compatibility repair
+    this.tryRepairHistorySessionDirs('during credential update');
+  }
+
+  private tryRepairHistorySessionDirs(context: string): void {
+    try {
+      this.repairHistorySessionDirs();
+    } catch (e) {
+      console.warn(`Failed to repair history/session dirs ${context}`, e);
+    }
+  }
+
+  public repairHistorySessionDirs(): void {
+    const configuredTmpDir = path.join(this.GEMINI_DIR, 'tmp');
+    if (!fs.existsSync(configuredTmpDir)) {
+      return;
+    }
+
+    let tmpDir: string;
+    try {
+      const tmpStats = fs.lstatSync(configuredTmpDir);
+      if (tmpStats.isSymbolicLink()) {
+        console.warn('Skip session repair because tmp directory is a symbolic link');
+        return;
+      }
+
+      tmpDir = fs.realpathSync(configuredTmpDir);
+    } catch (e) {
+      console.warn('Failed to resolve tmp directory for session repair', e);
+      return;
+    }
+
+    let projectDirs: fs.Dirent[] = [];
+    try {
+      projectDirs = fs.readdirSync(tmpDir, { withFileTypes: true }).filter(entry => entry.isDirectory());
+    } catch (e) {
+      console.warn('Failed to read tmp directory for session repair', e);
+      return;
+    }
+
+    for (const projectDir of projectDirs) {
+      try {
+        const sourceChatsDir = path.join(tmpDir, projectDir.name, 'chats');
+        if (!fs.existsSync(sourceChatsDir)) {
+          continue;
+        }
+
+        const sessionFiles = fs.readdirSync(sourceChatsDir).filter(file => file.endsWith('.json'));
+        for (const sessionFile of sessionFiles) {
+          const sourceFile = path.join(sourceChatsDir, sessionFile);
+
+          let parsed: any;
+          try {
+            parsed = JSON.parse(fs.readFileSync(sourceFile, 'utf8'));
+          } catch {
+            // Skip invalid/corrupted session file and continue loading others.
+            continue;
+          }
+
+          const projectHash = typeof parsed?.projectHash === 'string' ? parsed.projectHash.trim() : '';
+          if (!this.isSafeProjectHash(projectHash) || projectHash === projectDir.name) {
+            continue;
+          }
+
+          const targetProjectDir = path.resolve(tmpDir, projectHash);
+          if (!this.isPathInsideBaseDir(tmpDir, targetProjectDir)) {
+            continue;
+          }
+
+          if (fs.existsSync(targetProjectDir) && !this.isSafeExistingDirectoryPath(tmpDir, targetProjectDir)) {
+            continue;
+          }
+
+          const targetChatsDir = path.resolve(targetProjectDir, 'chats');
+          if (!this.isPathInsideBaseDir(tmpDir, targetChatsDir)) {
+            continue;
+          }
+
+          if (fs.existsSync(targetChatsDir)) {
+            if (!this.isSafeExistingDirectoryPath(tmpDir, targetChatsDir)) {
+              continue;
+            }
+          } else {
+            fs.mkdirSync(targetChatsDir, { recursive: true });
+          }
+
+          const targetFile = path.join(targetChatsDir, sessionFile);
+          if (!fs.existsSync(targetFile)) {
+            fs.copyFileSync(sourceFile, targetFile);
+          }
+        }
+      } catch (e) {
+        console.warn(`Failed to repair session directory for ${projectDir.name}`, e);
+      }
+    }
+  }
+
+  private isSafeProjectHash(projectHash: string): boolean {
+    return /^[a-zA-Z0-9_-]{8,128}$/.test(projectHash);
+  }
+
+  private isSafeExistingDirectoryPath(baseDir: string, directoryPath: string): boolean {
+    try {
+      const realPath = fs.realpathSync(directoryPath);
+      const realBase = fs.realpathSync(baseDir);
+      return this.isPathInsideBaseDir(realBase, realPath);
+    } catch {
+      return false;
+    }
+  }
+
+  private isPathInsideBaseDir(baseDir: string, targetPath: string): boolean {
+    const normalize = (p: string) => {
+      const resolved = path.resolve(p);
+      return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
+    };
+
+    const normalizedBase = normalize(baseDir);
+    const normalizedTarget = normalize(targetPath);
+    const baseWithSeparator = normalizedBase.endsWith(path.sep) ? normalizedBase : `${normalizedBase}${path.sep}`;
+
+    return normalizedTarget === normalizedBase || normalizedTarget.startsWith(baseWithSeparator);
   }
 
   private async updateGoogleAccountsFile(account: GeminiAccount) {

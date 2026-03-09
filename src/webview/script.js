@@ -259,8 +259,8 @@
 
                 // Targets
                 const targetModels = [
-                    { id: 'gemini-3-pro-preview', name: 'G3 Pro' },
-                    { id: 'gemini-3-flash-preview', name: 'G3 Flash' }
+                    { id: 'gemini-3.1-pro-preview', name: 'G3.1 Pro' },
+                    { id: 'gemini-3.1-flash-preview', name: 'G3.1 Flash' }
                 ];
 
                 if (account.quota && account.quota.buckets) {

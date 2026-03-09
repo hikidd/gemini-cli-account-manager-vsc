@@ -157,10 +157,11 @@ body {
 .pro-ring {
     padding: 2px;
     background: conic-gradient(
-        #EA4335 0deg 90deg, 
-        #4285F4 90deg 180deg, 
-        #34A853 180deg 270deg, 
-        #FBBC04 270deg 360deg
+        #EA4335 0deg 60deg,    /* Red continues from top-left to top-right */
+        #4285F4 60deg 180deg,  /* Blue occupies a large portion on the right */
+        #34A853 180deg 240deg, /* Green at the bottom-left */
+        #FBBC04 240deg 270deg, /* Yellow occupies a tiny portion on the left */
+        #EA4335 270deg 360deg  /* Red completes the top-left */
     );
     border-radius: 50%;
     box-sizing: border-box;

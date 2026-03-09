@@ -156,29 +156,20 @@ body {
 
 .pro-ring {
     padding: 2px;
-    /* 
-       Google Official Proportions Re-engineering:
-       - Red: Top-Left to Top-Right (~290deg to 20deg)
-       - Blue: Right side (~20deg to 150deg)
-       - Green: Bottom (~150deg to 255deg)
-       - Yellow: Precisely at 9 o'clock (~255deg to 285deg, center 270deg)
-    */
     background: conic-gradient(
-        from 0deg,
-        #4285F4 0deg 150deg,   /* Blue: Very large, covers entire right side */
-        #34A853 150deg 255deg, /* Green: Bottom area */
-        #FBBC05 255deg 285deg, /* Yellow: Tiny sliver, centered at 270deg (9 o'clock) */
-        #EA4335 285deg 360deg  /* Red: Top-left area */
+        #EA4335 0deg 60deg,    /* Top-right: Red */
+        #4285F4 60deg 150deg,  /* Right: Blue */
+        #34A853 150deg 240deg, /* Bottom: Green */
+        #FBBC05 240deg 300deg, /* Left: Yellow */
+        #EA4335 300deg 360deg  /* Top-left: Red */
     );
     border-radius: 50%;
     box-sizing: border-box;
 }
 
 .pro-ring .avatar {
-    /* The white/background gap is created by the 2px border on the image itself */
-    border: 2px solid var(--vscode-sideBar-background);
+    border: 1px solid var(--vscode-sideBar-background); /* Minimal border to prevent color bleed */
 }
-
 .user-info {
     display: flex;
     flex-direction: column;

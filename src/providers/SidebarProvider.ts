@@ -267,56 +267,32 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
   }
 
   private async performQuotaRefresh(account: any, silent: boolean = false) {
-    // Check if token needs refresh (buffer 5 minutes)
-    if (Date.now() > account.expiresAt - 5 * 60 * 1000) {
-      try {
-        console.log(`[SidebarProvider] Token expired or soon to expire for ${account.email}, refreshing...`);
-        const tokens = await this.authService.refreshAccessToken(account.refreshToken);
-        
-        // Update account with new tokens
-        account.accessToken = tokens.access_token;
-        account.expiresAt = Date.now() + (tokens.expires_in * 1000);
-        if (tokens.refresh_token) {
-          account.refreshToken = tokens.refresh_token;
-        }
-        
-        await this.accountManager.saveAccount(account);
-        if (account.isActive) {
-           await this.cliService.updateCredentials(account);
-        }
-        console.log(`[SidebarProvider] Token refreshed successfully.`);
-      } catch (error: any) {
-        console.error(`[SidebarProvider] Failed to refresh token: ${error.message}`);
-        if (!silent) {
-            vscode.window.showErrorMessage(`Failed to refresh session for ${account.email}. Please login again.`);
-        }
-        return;
-      }
-    }
-
-    // Refresh Project ID & Quota & Account Type
-    const accountInfo = await this.quotaService.fetchAccountInfo(account);
+    // 1. Ensure token is valid (automatically refreshes if needed)
+    const validAccount = await this.accountManager.ensureValidToken(account);
+    
+    // 2. Refresh Project ID & Quota & Account Type using the valid account
+    const accountInfo = await this.quotaService.fetchAccountInfo(validAccount);
     if (accountInfo.projectId) {
-      account.projectId = accountInfo.projectId;
+      validAccount.projectId = accountInfo.projectId;
     }
     if (accountInfo.type) {
-      account.type = accountInfo.type;
+      validAccount.type = accountInfo.type;
     }
     if (accountInfo.tierId) {
-      account.tierId = accountInfo.tierId;
+      validAccount.tierId = accountInfo.tierId;
     }
     
-    const quotaData = await this.quotaService.fetchQuota(account);
+    const quotaData = await this.quotaService.fetchQuota(validAccount);
     if (quotaData && quotaData.buckets) {
-      account.quota = { buckets: quotaData.buckets };
+      validAccount.quota = { buckets: quotaData.buckets };
     }
 
-    account.lastRefreshed = Date.now();
+    validAccount.lastRefreshed = Date.now();
 
-    await this.accountManager.saveAccount(account);
+    await this.accountManager.saveAccount(validAccount);
     
     if (!silent) {
-        vscode.window.showInformationMessage(`Quota refreshed for ${account.email}`);
+        vscode.window.showInformationMessage(`Quota refreshed for ${validAccount.email}`);
     }
   }
 

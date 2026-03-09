@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { GeminiAccount } from '../types';
 import { GeminiCliService } from '../services/GeminiCliService';
+import { GoogleAuthService } from '../services/GoogleAuthService';
 
 export class AccountManager {
   private context: vscode.ExtensionContext;
@@ -8,11 +9,67 @@ export class AccountManager {
   private readonly LANGUAGE_KEY = 'gemini-manager.language';
   private _accounts: GeminiAccount[] = [];
   private cliService: GeminiCliService;
+  private authService: GoogleAuthService;
 
   constructor(context: vscode.ExtensionContext) {
     this.context = context;
     this.cliService = new GeminiCliService();
+    this.authService = new GoogleAuthService();
     this.loadAccounts();
+  }
+
+  /**
+   * Checks if an account's token is about to expire and refreshes it if necessary.
+   */
+  public async ensureValidToken(account: GeminiAccount): Promise<GeminiAccount> {
+    const now = Date.now();
+    const FIVE_MINUTES = 5 * 60 * 1000;
+    
+    // Check if token is expired or about to expire in 5 minutes
+    if (account.expiresAt && (now + FIVE_MINUTES) < account.expiresAt) {
+      console.log(`[AccountManager] Token for ${account.email} is still valid.`);
+      return account;
+    }
+
+    if (!account.refreshToken) {
+      console.warn(`[AccountManager] No refresh token for ${account.email}, cannot refresh.`);
+      return account;
+    }
+
+    try {
+      console.log(`[AccountManager] Token for ${account.email} expired or expiring soon, refreshing...`);
+      const tokens = await this.authService.refreshAccessToken(account.refreshToken);
+      
+      const updatedAccount: GeminiAccount = {
+        ...account,
+        accessToken: tokens.access_token,
+        // Google might not return a new refresh token unless requested/needed
+        refreshToken: tokens.refresh_token || account.refreshToken,
+        expiresAt: Date.now() + (tokens.expires_in * 1000),
+        idToken: tokens.id_token || account.idToken,
+        tokenType: tokens.token_type || account.tokenType,
+        scope: tokens.scope || account.scope
+      };
+
+      // Save to memory and extension state
+      const idx = this._accounts.findIndex(a => a.id === account.id);
+      if (idx !== -1) {
+        this._accounts[idx] = updatedAccount;
+        await this.persistAccounts();
+      }
+
+      // Sync to CLI credentials files if this is the active account
+      if (updatedAccount.isActive) {
+        console.log(`[AccountManager] Syncing refreshed token for ${updatedAccount.email} to CLI...`);
+        await this.cliService.updateCredentials(updatedAccount);
+      }
+
+      return updatedAccount;
+    } catch (error: any) {
+      console.error(`[AccountManager] Failed to refresh token for ${account.email}:`, error.message);
+      // We don't throw here to avoid crashing the flow, but the subsequent API call will likely fail (401)
+      return account;
+    }
   }
 
   public getLanguage(): 'zh' | 'en' {

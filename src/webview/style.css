@@ -156,12 +156,13 @@ body {
 
 .pro-ring {
     padding: 2px;
+    /* Precise Google Proportions: Blue (~150deg), Green (~80deg), Yellow (~40deg), Red (~90deg) */
     background: conic-gradient(
-        #EA4335 0deg 60deg,    /* Red continues from top-left to top-right */
-        #4285F4 60deg 180deg,  /* Blue occupies a large portion on the right */
-        #34A853 180deg 240deg, /* Green at the bottom-left */
-        #FBBC04 240deg 270deg, /* Yellow occupies a tiny portion on the left */
-        #EA4335 270deg 360deg  /* Red completes the top-left */
+        from 0deg,
+        #4285F4 0deg 150deg,  /* Blue: Very Large */
+        #34A853 150deg 230deg, /* Green: Bottom */
+        #FBBC04 230deg 270deg, /* Yellow: Very Small (Left) */
+        #EA4335 270deg 360deg  /* Red: Top/Left */
     );
     border-radius: 50%;
     box-sizing: border-box;

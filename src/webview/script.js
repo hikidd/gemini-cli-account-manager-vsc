@@ -365,11 +365,13 @@
                 }
 
                 const isProAccount = account.type === 'PRO' || account.type === 'ULTRA';
-                const avatarClass = isProAccount ? 'avatar pro-ring' : 'avatar';
+                const avatarContainerClass = isProAccount ? 'avatar-container pro-ring' : 'avatar-container';
 
                 card.innerHTML = `
                     <div class="card-header">
-                        <img src="${avatarSrc}" class="${avatarClass}" alt="Avatar">
+                        <div class="${avatarContainerClass}">
+                            <img src="${avatarSrc}" class="avatar" alt="Avatar">
+                        </div>
                         <div class="user-info">
                             <div class="email" title="${account.email}">${account.email}</div>
                             <div style="display:flex; gap: 8px; align-items: center;">

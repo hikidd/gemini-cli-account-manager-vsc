@@ -19,6 +19,10 @@ interface LoadCodeAssistResponse {
     id: string;
     name: string;
   };
+  paidTier?: {
+    id: string;
+    name: string;
+  };
 }
 
 export class GeminiQuotaService {
@@ -55,36 +59,43 @@ export class GeminiQuotaService {
       let type: 'FREE' | 'PRO' | 'ULTRA' = 'FREE'; // Default
       let rawTierId = '';
 
-      // Infer type from currentTier
-      if (response.data.currentTier) {
-        const tierId = (response.data.currentTier.id || '').toLowerCase();
-        const tierName = (response.data.currentTier.name || '').toLowerCase();
-        rawTierId = response.data.currentTier.id || ''; // Store original case
-        
-        console.log(`[GeminiQuotaService] Tier Detection - ID: "${tierId}", Name: "${tierName}"`);
+      // Check for paidTier first (e.g. Google One AI Ultra)
+      const paidTier = response.data.paidTier;
+      const currentTier = response.data.currentTier;
 
-        // Check for ULTRA / Advanced first (Highest priority)
-        const isUltra = tierId.includes('advanced') || tierId.includes('ultra') || 
-                        tierName.includes('advanced') || tierName.includes('ultra');
+      if (paidTier) {
+        const pId = (paidTier.id || '').toLowerCase();
+        const pName = (paidTier.name || '').toLowerCase();
+        rawTierId = paidTier.id;
 
-        // Check for PRO / Premium / Standard
+        if (pId.includes('ultra') || pName.includes('ultra')) {
+          type = 'ULTRA';
+        } else if (pId.includes('pro') || pId.includes('standard') || pId.includes('premium')) {
+          type = 'PRO';
+        }
+      }
+
+      // If still not ULTRA, check currentTier
+      if (type !== 'ULTRA' && currentTier) {
+        const tierId = (currentTier.id || '').toLowerCase();
+        const tierName = (currentTier.name || '').toLowerCase();
+        if (!rawTierId) rawTierId = currentTier.id;
+
+        const isUltra = tierId.includes('ultra') || tierId.includes('advanced') || 
+                        tierName.includes('ultra') || tierName.includes('advanced');
+
         const isPro = tierId.includes('pro') || tierId.includes('premium') || tierId.includes('standard') ||
                       tierName.includes('pro') || tierName.includes('premium') || tierName.includes('standard');
         
-        // Anti-check: Ensure it's not explicitly free
         const isFree = tierId.includes('free') || tierId.includes('basic') || tierName.includes('free');
 
         if (isUltra) {
           type = 'ULTRA';
-        } else if (isPro && !isFree) {
+        } else if (type === 'FREE' && isPro && !isFree) {
           type = 'PRO';
-        } else if (!isFree && tierId !== '') {
-            // Fallback: if it's not explicitly free and has a tier ID, assume PRO
-            console.log('[GeminiQuotaService] Tier ID is present and not free/basic, assuming PRO.');
+        } else if (type === 'FREE' && !isFree && tierId !== '') {
             type = 'PRO';
         }
-      } else {
-         console.log('[GeminiQuotaService] No currentTier field found in response.');
       }
 
       return { projectId, type, tierId: rawTierId };

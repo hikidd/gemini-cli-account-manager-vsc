@@ -156,13 +156,19 @@ body {
 
 .pro-ring {
     padding: 2px;
-    /* Precise Google Proportions: Blue (~150deg), Green (~80deg), Yellow (~40deg), Red (~90deg) */
+    /* 
+       Google Official Proportions Re-engineering:
+       - Red: Top-Left to Top-Right (~290deg to 20deg)
+       - Blue: Right side (~20deg to 150deg)
+       - Green: Bottom (~150deg to 255deg)
+       - Yellow: Precisely at 9 o'clock (~255deg to 285deg, center 270deg)
+    */
     background: conic-gradient(
         from 0deg,
-        #4285F4 0deg 150deg,  /* Blue: Very Large */
-        #34A853 150deg 230deg, /* Green: Bottom */
-        #FBBC04 230deg 270deg, /* Yellow: Very Small (Left) */
-        #EA4335 270deg 360deg  /* Red: Top/Left */
+        #4285F4 0deg 150deg,   /* Blue: Very large, covers entire right side */
+        #34A853 150deg 255deg, /* Green: Bottom area */
+        #FBBC05 255deg 285deg, /* Yellow: Tiny sliver, centered at 270deg (9 o'clock) */
+        #EA4335 285deg 360deg  /* Red: Top-left area */
     );
     border-radius: 50%;
     box-sizing: border-box;
